@@ -5,7 +5,7 @@
 
 import pickle as pck
 import pandas as pd
-import MathToolBox
+import ssaxgeo.MathToolBox as MathToolBox
 import seaborn as sns
 import matplotlib.pyplot as plt
 import hdbscan

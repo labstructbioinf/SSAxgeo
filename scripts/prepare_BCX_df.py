@@ -1,4 +1,4 @@
-import PDBx
+import ssaxgeo.PDBx as PDBx
 import pandas as pd
 import numpy as np
 import random
@@ -6,7 +6,7 @@ import pickle as pck
 import seaborn as sns
 import matplotlib.pyplot as plt
 ##
-import MathToolBox
+import ssaxgeo.MathToolBox as MathToolBox
 from scipy.cluster.hierarchy import fcluster
 import hdbscan
 ##

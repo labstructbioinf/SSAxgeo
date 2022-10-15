@@ -8,14 +8,14 @@ setup(name='SSAxgeo',
       url='https://github.com/dezordi/ViralFlow/',
       author='"Antonio Marinho',
       author_email='amarinhosn@pm.me',
-      packages=['ssax'],
+      packages=['ssaxgeo'],
       classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3.8',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Bio-Informatics'
           ],
-      #scripts=['scripts/viralflow'],
+      scripts=['scripts/ssaxgeo'],
       install_requires=['hdbscan', 'pandas', 'numpy', 
                         'matplotlib', 'seaborn', 'scipy'],
       zip_safe=False)

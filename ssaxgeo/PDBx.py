@@ -6,10 +6,10 @@ import pickle as pck
 import matplotlib.pyplot as plt
 import seaborn as sns
 #
-import MathToolBox
+import ssaxgeo.MathToolBox as MathToolBox
 from scipy.cluster.hierarchy import fcluster
 # third party data
-import dssp
+import ssaxgeo.dssp as dssp
 
 '''
         >>>> PDBx <<<<
@@ -652,7 +652,7 @@ class entry:
 
     # ~~~ PLOT METHODS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def plot_arrows(self, myDIR=None, save_fig=False, show_plot=True,
-                    plot_suffix='Arrows', highlight_res=None):
+                     plot_suffix='Arrows',plot_prefix='', highlight_res=None):
         ''' Generate arrow plot for entry xgeo data'''
         def __compute_dvecs(xdata_df):
             '''
@@ -710,8 +710,8 @@ class entry:
             assert(len(highlight_res) == 2), err_m
             res_i = highlight_res[0]
             res_f = highlight_res[1]
-            assert(type(resi) == int), 'res_i must be int'
-            aseert(type(res_f) == int), 'res_i must be int'
+            assert(type(res_i) == int), 'res_i must be int'
+            assert(type(res_f) == int), 'res_i must be int'
             select = (self.xdata_df['res']>=res_i) & (self.xdata_df['res']<= res_f)
             dvecs_df = __compute_dvecs(self.xdata_df.loc[~select])
             dvecs_df_res = __compute_dvecs(self.xdata_df.loc[select])
@@ -738,9 +738,9 @@ class entry:
         plt_flnm3 = None
 
         if myDIR != None:
-            plt_flnm1 = myDIR+'wri_tor'+plot_suffix+'.png'
-            plt_flnm2 = myDIR+'curv_tor'+plot_suffix+'.png'
-            plt_flnm3 = myDIR+'wri_curv'+plot_suffix+'.png'
+            plt_flnm1 = myDIR+'/'+plot_prefix+'wri_tor'+plot_suffix+'.png'
+            plt_flnm2 = myDIR+'/'+plot_prefix+'curv_tor'+plot_suffix+'.png'
+            plt_flnm3 = myDIR+'/'+plot_prefix+'wri_curv'+plot_suffix+'.png'
 
         __gen_arrow_plot(X=Z, Y=Y, Ux=Uz, Uy=Uy, M=M, xlabel='Writhing',
                       ylabel=r'$\tau$', plot_flnm=plt_flnm1)

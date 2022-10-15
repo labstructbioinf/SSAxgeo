@@ -6,6 +6,16 @@ Here all the methods/scripts/notebooks related to Helix Continuum project are st
 
 ## How to? (quick and dirty)
 
+### Install
+
+```{bash}
+
+git clone https://github.com/labstructbioinf/SSAxgeo.git
+cd SSAxgeo/
+pip install -e ./
+```
+
+
 ### 1 - Get dataframe for entries in BCX
 To obtain a dataframe with all the descriptors and run the SS_assignment just run the _prepare_BCX_df.py_
 ```{bash}
@@ -40,10 +50,10 @@ To run the Secondary Structure Assignment based on Differential Geometry (xgeo) 
 
 
 ```{bash}
->$ python RunSSAx.py pdbfile.pdb xgeofile.csv
+>$ ssaxgeo pdbfile.pdb xgeofile.csv
 ```
 
-    usage: RunSSAx.py [-h] [-can_dir CAN_DIR]
+    usage: ssaxgeo [-h] [-can_dir CAN_DIR]
                       [-out_dir OUT_DIR] [-min_dist MIN_DIST]
                       [-pp2_max PP2_MAX] [-prefix PREFIX]
                       pdb_flpath xgeo_flpath
