@@ -15,6 +15,11 @@ cd SSAxgeo/
 pip install -e ./
 ```
 
+### Run ssaxgeo
+
+```{bash}
+ssaxgeo [pdb_filepath] [pdb_xgeo_csv] 
+```
 
 ### 1 - Get dataframe for entries in BCX
 To obtain a dataframe with all the descriptors and run the SS_assignment just run the _prepare_BCX_df.py_
