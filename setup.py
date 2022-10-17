@@ -3,9 +3,9 @@ from setuptools import setup
 setup(name='SSAxgeo',
       version='1.0.dev',
       description='''
-      Workflows for SARS-CoV-2 genome Assembly at FioCruz/IAM
+      Protein secondary structure elements assignment based on differential geometry
       ''',
-      url='https://github.com/dezordi/ViralFlow/',
+      url='https://github.com/labstructbioinf/SSAxgeo',
       author='"Antonio Marinho',
       author_email='amarinhosn@pm.me',
       packages=['ssaxgeo'],
