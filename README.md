@@ -6,7 +6,7 @@ Here all the methods/scripts/notebooks related to Helix Continuum project are st
 
 ## TODO: (ver 1.0)
 
-- [ ] bring diffgeo to be part of ssax (so the user can just install one package to get everything it needs for SSA)
+- [x] bring diffgeo to be part of ssaxgeo
 - [ ] migrate code for canonical regions detection to rely on localpdb
 - [ ] add/update and adapt scripts to reproduce paper results more easily (via CLI)
 - [ ] update documentation
@@ -14,6 +14,9 @@ Here all the methods/scripts/notebooks related to Helix Continuum project are st
 ## How to? (quick and dirty)
 
 ### Install
+
+SSAxgeo relies on [Melodia](https://github.com/rwmontalvao/Melodia) to compute the differential geometry representation.
+After Melodia is available, install SSAxgeo:
 
 ```{bash}
 
@@ -25,8 +28,16 @@ pip install -e ./
 ### Run ssaxgeo
 
 ```{bash}
-ssaxgeo [pdb_filepath] [pdb_xgeo_csv] 
+ssaxgeo [pdb_filepath]
 ```
+
+Precomputed differential geometry can be provided to ssaxgeo via:
+
+```{bash}
+ssaxgeo my.pdb -xgeo_flpath my_pdb_xgeo.csv
+```
+
+----
 
 ### 1 - Get dataframe for entries in BCX
 To obtain a dataframe with all the descriptors and run the SS_assignment just run the _prepare_BCX_df.py_
