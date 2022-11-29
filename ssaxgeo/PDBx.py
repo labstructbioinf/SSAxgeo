@@ -11,6 +11,9 @@ from scipy.cluster.hierarchy import fcluster
 # third party data
 import ssaxgeo.dssp as dssp
 
+# diff geo
+import melodia as mel
+
 '''
         >>>> PDBx <<<<
 
@@ -589,8 +592,8 @@ class entry:
     ----------------------------------------------------------------------------
     '''
 
-    def __init__(self, coord_flpath, xgeo_flpath, pdbid=None, chain=None,
-        moltype=None, name=None):
+    def __init__(self, coord_flpath, xgeo_flpath=None, pdbid=None, chain=None,
+        moltype=None, name=None, model_i=None):
 
         # 1 - Set attributes
         self.name = name
@@ -601,11 +604,16 @@ class entry:
         self.chain = chain
         self.xgeo_flpath = xgeo_flpath
         # 2 - load xgeo dataframe
-        self.xdata_df = load_xgeo_df(xgeo_flpath)
+        if self.xgeo_flpath != None:
+            self.xdata_df = load_xgeo_df(xgeo_flpath)
+        if self.xgeo_flpath == None:
+            self.computeDiffGeo(model_i=model_i)
         # 3 - get is count
         self.cont = self.__is_bkb_cont()
+
         # 4 - get number of residues
         self.nres = len(self.xdata_df['res'])
+
         # << set placeholders >>
         self.dssp_flpath = None
         self.frag_df = None
@@ -621,6 +629,31 @@ class entry:
             return True
         else:
             return False
+
+    # ~~~ COMPUTE DG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def computeDiffGeo(self, model_i=None):
+        '''
+        compute curvature, torsion and writhing number and return a pandas dataframe
+        '''
+        # compute geometry
+        dfi = mel.geometry_from_structure_file(self.coord_flpath)
+
+        # if model is provided, check if it is available
+        if model_i != None:
+            assert(model_i in dfi.model.unique())
+
+        # if model note provided, choose first model
+        if model_i == None:
+            model_i = dfi.model.unique()[0]
+        
+        model = dfi['model'] == model_i
+        dfo = dfi[model].copy()
+        
+        # store xdata as attribute
+        # NEED TO BS SURE IT IS CONSISTENT WITH PREVIOUS DF FORMAT!! (check load_xgeo_df)
+        dfo.rename(columns={'model':'conf_n', 'order':'res', 'curvature':'curv', 
+                            'torsion':'tor', 'arc_length':'arc','writhing':'wri'}, inplace=True)
+        self.xdata_df = dfo
 
     # ~~~ LOAD DATA METHODS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def load_dssp_data(self, dssp_flpath, dssp_pp2 = True):

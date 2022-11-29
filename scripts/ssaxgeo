@@ -19,8 +19,8 @@ geometry (xgeo) descriptors on a specified entry and save results as csv files.
 parser = argparse.ArgumentParser(description=desc)
 parser.add_argument('pdb_flpath', type=str,
                     help='protein chain coordinate file path')
-parser.add_argument('xgeo_flpath', type=str,
-                    help='protein chain xgeo file path')
+parser.add_argument('-xgeo_flpath', type=str, default=None,
+                    help='protein chain xgeo file path (computed by Flexgeo)')
 script_dir = os.path.dirname(os.path.realpath(__file__))
 parser.add_argument('-can_dir', type=str, default=script_dir+'/../canonical/',
                 help='SSE canonical dataframes directory (default=script dir)')
@@ -74,7 +74,7 @@ print('|---------------------------------------------------------------------|')
 
 # Load entry data
 print('@ loading entry...')
-entry = PDBx.entry(pdb_flpath,xgeo_flpath)
+entry = PDBx.entry(pdb_flpath,xgeo_flpath=xgeo_flpath)
 print('  > nres          = ', entry.nres)
 print('  > is continuous = ', entry.cont)
 
