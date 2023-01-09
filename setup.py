@@ -15,7 +15,7 @@ setup(name='SSAxgeo',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Bio-Informatics'
           ],
-      scripts=['scripts/ssaxgeo'],
+      scripts=['scripts/ssaxgeo', 'scripts/getSampleOfClstrPDB'],
       install_requires=['hdbscan', 'pandas', 'numpy', 
-                        'matplotlib', 'seaborn', 'scipy'],
+                        'matplotlib', 'seaborn', 'scipy', 'localpdb'],
       zip_safe=False)

@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+__author__ = "Antonio Marinho da Silva Neto"
+__license__ = "MIT License"
+__version__ = "1.0_dev"
+__maintainer__ = "Antonio Marinho da Silva Neto"
+__email__ = "amarinhosn@pm.me"
+__status__ = "Alpha"
+
+import argparse
+from localpdb import PDB
+import multiprocessing as mp
+import numpy as np
+import os
+# --- FUNCTIONS ---------------------------------------------------------------
+def get_random_clstr_sample(kwargs):
+    c_lbl = kwargs["clbl"]
+    c_lst = kwargs["target_col"]
+    cluster_indices = np.where(c_lst == c_lbl)[0]
+    selected_index = np.random.choice(cluster_indices)
+    return selected_index
+
+def select_one_index_per_cluster(clusters, n_jobs=1, seed=None):
+    """
+    Select one index randomly for each cluster label in a numpy array (parallel version).
+    
+    Parameters
+    ----------
+    clusters : numpy.ndarray
+        The input array containing the cluster labels.
+    random_seed : int, optional
+        The random seed to use. If provided, it is used to initialize the
+        random number generator, so that the results are reproducible.
+    n_jobs : int, optional
+        The number of jobs to use for the computation. If -1, all processors are used.
+        
+    Returns
+    -------
+    list
+        A list containing one index for each unique cluster label.
+    """
+    selected_indices = []
+    unq_clusters = np.unique(clusters)
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    # prepare kwargs
+    dct_lst = []
+    for c in unq_clusters:
+        dct_lst.append({'clbl':c, 'target_col':clusters})
+    
+    # sampling indexes 
+    with mp.Pool(n_jobs) as pool:
+            selected_indices = pool.map(get_random_clstr_sample, dct_lst)
+    
+    return selected_indices
+
+
+# --- INPUTS ------------------------------------------------------------------
+
+desc = '''
+This script loads data from localpdb, select a given clustered PDB, select randomly one exemplar
+of each cluster and save results as csv files.
+'''
+
+parser = argparse.ArgumentParser(description=desc)
+parser.add_argument('mylocalpdb', type=str,
+                help='Path to a local PDB copy (must be obtained by localpdb package)')
+parser.add_argument('-redundancy', type=int, default=30,
+                help='redundancy by sequence identity [100, 95, 90, 70, 50 and 30]')
+parser.add_argument('-out_dir', type=str, default=os.getcwd(),
+                help='Output directory (default=working dir)')
+parser.add_argument('-res_lim', type=float, default=2.0,
+                help='resolution limit of structures to be considered (default=2.0)')
+parser.add_argument('-ncpus', type=int, default=1,
+                help='number of cpus to use (default = 1)')
+parser.add_argument('-seed', type=int, default=None,
+                help='seed for random number generator (default = None')
+args = parser.parse_args()
+
+ACCEPTED_RED = [100, 95, 90, 70, 50, 30]
+mylocalpdb = args.mylocalpdb #"/home/antonio/Projects/HlxCnt/mypdb/"
+reddnc = args.redundancy #30
+output_dir = args.out_dir #"/home/antonio/Projects/HlxCnt/"
+
+res_lim = args.res_lim #2.0
+ncpus = args.ncpus #4
+seed = args.seed #None
+
+# check if redundancy is valid
+assert(reddnc in ACCEPTED_RED), f"sequence redundancy ({reddnc}) requested is not valid"
+
+# TODO add sanity checks
+# TODO check if mylocalpdb is valid
+
+# --- RUN ---------------------------------------------------------------------
+print("@ load local PDB data...")
+lpdb = PDB(db_path=mylocalpdb, auto_filter=True, plugins=["PDBClustering"])
+
+print(f"@ filtering by resolution (<= {res_lim})")
+#lpdb.entries = lpdb.entries.query('type == "prot"') # Protein structures
+#lpdb.entries = lpdb.entries.query('method == "diffraction"') # solved with X-ray diffraction
+lpdb.entries = lpdb.entries.query(f'resolution <= {res_lim}') # with resolution below a certin limit
+
+# Remove redundancy (select only representative structure from each sequence cluster)
+print(f"@ load clustered PDB (redundancy = {reddnc})")
+lpdb.load_clustering_data(redundancy=reddnc)
+lpdb.chains = lpdb.chains[lpdb.chains[f'clust-{reddnc}'].notnull()]
+
+out_clst_csv = f"{output_dir}/clust-{reddnc}.csv"
+print(f"  > saved as {out_clst_csv}")
+lpdb.chains.to_csv(out_clst_csv)
+
+# get indexes of selected samples
+print(f"@ selecting one chain for each cluster...")
+selected_idxs = select_one_index_per_cluster(lpdb.chains[f'clust-{reddnc}'].values,
+                                             n_jobs=ncpus,
+                                             seed=seed)
+print("@ writing sampled clustered pdb csv...")
+sampled_clstr_pdb = lpdb.chains.iloc[selected_idxs]
+sampled_csv_path = f"{output_dir}/sampled_clust-{reddnc}.csv"
+sampled_clstr_pdb.to_csv(sampled_csv_path)
+
+print(":: DONE ::")
