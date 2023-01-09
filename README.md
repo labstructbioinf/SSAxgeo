@@ -38,8 +38,32 @@ ssaxgeo my.pdb -xgeo_flpath my_pdb_xgeo.csv
 ```
 
 ----
+## REPRODUCE PAPER ANALYSES
 
-### 1 - Get dataframe for entries in BCX
+
+### 0 - Get a local copy of the PDB
+
+To reproduce the analyses presented on the paper, be sure localpdb is available on your environment.
+Then, setup your local pdb copy:
+
+```{bash}
+localpdb_setup -db_path /path/to/mypdb/ -plugins DSSP PDBClustering PDBChain --fetch_cif --fetch_pdb  
+```
+This process most likely will take a long time.
+
+### 1 - Get a sampling of a clustered PDB
+
+```{bash}
+getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
+```
+[add params descriptions]
+
+### 2 - compute differential geometry descriptors
+
+### 3 - identify geometrical helices of protein structures
+
+### 4 - Select canonical regions
+----
 To obtain a dataframe with all the descriptors and run the SS_assignment just run the _prepare_BCX_df.py_
 ```{bash}
 >$ python prepare_BCX_df.py /path/to/lPDB_metadata.csv bc-50 -ncpus 10
