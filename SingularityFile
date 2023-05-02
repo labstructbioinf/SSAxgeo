@@ -37,7 +37,7 @@ unset __conda_setup
 conda activate melodia
 
 # install localpdb
-pip3 install localpdb
+pip3 install localpdb pandas
 
 #install SSAxgeo
 cd /app/

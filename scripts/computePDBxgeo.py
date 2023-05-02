@@ -10,6 +10,7 @@ import pandas as pd
 import multiprocessing as mp
 import os
 import ssaxgeo.PDBx as PDBx
+import argparse
 
 def decompressGZFiles(mylocalpdb_path):
     
@@ -79,11 +80,48 @@ def addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb):
         print(f"{len(missing_fls_i)} files which chains were not found at {mylocalpdb}")
     return sampled_clstrd_pdb_df.drop(missing_fls_i, axis=0)
 
+def get_all_files_in_dir(directory):
+    file_paths = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_paths.append(file_path)
+    return file_paths
+
+
+parser = argparse.ArgumentParser(description='Compute xgeo data for a given set of chain provided.')
+parser.add_argument('--mylocalpdb_path', type=str, required=True,
+                    help='path to a localpdb database')
+parser.add_argument('--sampled_clstrd_path', type=str, required=True,
+                    help='path to a sampled clustered csv (produced by getSampleOfCLstrPDB)')
+parser.add_argument('--xgeo_output_dir', type=str, default=None, 
+                    help='path of a dir to store xgeo csv files (default = xgeo_output_dir+"/xgeo_chains/"')
+parser.add_argument('--ncpus', type=int, default=1,
+                    help='Number of cpus to be used (default=1)')
+parser.add_argument('--out_csv', type=str, default='/home/antonio/Projects/HlxCnt/sampled_clustered_pdb_2.csv', help='Description of out_csv')
+
+args = parser.parse_args()
+args_dct = vars(args)
+
+print(args_dct["xgep_output_dir"])
+
+mylocalpdb_path = args_dct["mylocalpdb_path"]
+sampled_clstrd_path = args_dct["sampled_clstrd_path"]
+if args_dct["xgeo_output_dir"]:
+    xgeo_output_dir = args_dct["xgeo_output_dir"]
+ncpus = args_dct["ncpus"]
+out_csv = args_dct["out_csv"]
+
+print(xgeo_output_dir)
+
+'''
 mylocalpdb_path = "/home/antonio/Projects/HlxCnt/mypdb/"
 sampled_clstrd_path = "/home/antonio/Projects/HlxCnt/sampled_clustered_pdb.csv"
 xgeo_output_dir = mylocalpdb_path+"xgeo_chain/"
 ncpus = 4
 out_csv = "/home/antonio/Projects/HlxCnt/sampled_clustered_pdb_2.csv"
+'''
+
 # decompress chain gz files if needed
 decompressGZFiles(mylocalpdb_path)
 
@@ -94,7 +132,6 @@ sampled_clstrd_pdb_df = addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb_pa
 
 # run melodia on each entry, store xgeo.csv files at mylocalpdb dir
 # check if file already exist to avoid recomputing xgeo data!
-"""
 chain_fls = sampled_clstrd_pdb_df["chain_flpath"].values
 kwargs_to_proc = []
 for i in chain_fls:
@@ -103,25 +140,22 @@ for i in chain_fls:
 pool = mp.Pool(ncpus)
 print(len(kwargs_to_proc))
 pool.map(compute_xgeo, kwargs_to_proc)
-"""
-# TODO: add xgeo file location column at sampled clustered
 
-def get_all_files_in_dir(directory):
-    file_paths = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_paths.append(file_path)
-    return file_paths
-files_found = get_all_files_in_dir(xgeo_output_dir)
+
 
 # add xgeo files paths at a new column
+files_found = get_all_files_in_dir(xgeo_output_dir)
 paths_idx_dct = {}
+
 for f in files_found:
     paths_idx_dct[f.split("/")[-1].split(".")[0]] = f
 sampled_clstrd_pdb_df["xgeo_chain_flpath"] = sampled_clstrd_pdb_df.index.map(paths_idx_dct)
 missing_xgeo_N = len(sampled_clstrd_pdb_df.loc[sampled_clstrd_pdb_df["xgeo_chain_flpath"].isna()])
 print(f"{missing_xgeo_N} entries which no xgeo data was computed")
+
 # update sample clustered pdb csv
 sampled_clstrd_pdb_df.to_csv(out_csv)
 print(":: DONE ::")
+
+#TODO next thing to do is to adapt PreapreBCX_df to new structure
+# Prepare BCX_df get a set of structures and identify fragments 
