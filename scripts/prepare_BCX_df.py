@@ -157,6 +157,8 @@ grp = PDBx.group('test')
 grp.entries = df_filter.apply(load_entries, axis=1)
 print('>> ', len(grp.entries), 'total loaded entries')
 
+# TODO Everything bellow needs to be done on the new csv
+
 # 1 - Normalization
 print('@ normalization...')
 workers = mp.Pool(processes=NCPUS)
