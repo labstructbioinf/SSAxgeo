@@ -1,83 +1,36 @@
 #!/bin/bash
 Bootstrap: docker
-From: continuumio/conda-ci-linux-64-python3.8
+From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
 
 %post
 
-apt-get update -qq -y && \
-apt-get install -y --no-install-recommends \
-        rsync wget python3 python3-pip && \
 
-# update conda
-conda update -n base -c defaults conda
+apt-get update -qq -y
+apt-get install -y rsync wget python3 python3-pip git
 
 mkdir /app/
 cd /app/
 # install Melodia
 git clone --recursive https://github.com/rwmontalvao/Melodia.git
 cd Melodia/
-conda env create -f environment.yml
-conda init bash
+python3 setup.py install
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/opt/conda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then
-        . "/opt/conda/etc/profile.d/conda.sh"
-    else
-        export PATH="/opt/conda/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
-conda activate melodia
-
-# install localpdb
-pip3 install localpdb pandas
+# install dependencies
+pip3 install localpdb pandas nglview seaborn scipy scikit-learn
 
 #install SSAxgeo
 cd /app/
 git clone https://github.com/labstructbioinf/SSAxgeo.git
 cd SSAxgeo/
-pip install -e ./
+pip3 install -e ./
 
 %runscript
-cd /
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/opt/conda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then
-        . "/opt/conda/etc/profile.d/conda.sh"
-    else
-        export PATH="/opt/conda/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
 exec /bin/bash "$@"
 
 %startscript
-cd /
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/opt/conda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/opt/conda/etc/profile.d/conda.sh" ]; then
-        . "/opt/conda/etc/profile.d/conda.sh"
-    else
-        export PATH="/opt/conda/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-conda activate melodia
 exec /bin/bash "$@"
+
+%test
+    python3 -c "import melodia"
+    ssaxgeo -h
+    localpdb_setup -h
