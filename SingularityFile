@@ -6,7 +6,7 @@ From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
 
 
 apt-get update -qq -y
-apt-get install -y rsync wget python3 python3-pip git
+apt-get install -y rsync wget python3 python3-pip git nano
 
 mkdir /app/
 cd /app/
