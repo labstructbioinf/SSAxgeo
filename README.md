@@ -53,14 +53,58 @@ This process most likely will take a long time.
 
 ### 1 - Get a sampling of a clustered PDB
 
+Once the local pdb copy is in place, compute a clustered pdb with a given sequence redundancy.
+For instance, with the command bellow the user can obtain clusters for 30% of redundance of each entry with at least 2 angstron resolutions.
+
 ```{bash}
 getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
 ```
-[add params descriptions]
 
+```
+usage: getSampleOfClstrPDB [-h] [-redundancy REDUNDANCY] [-out_dir OUT_DIR] [-res_lim RES_LIM] [-ncpus NCPUS] [-seed SEED] mylocalpdb
+
+This script loads data from localpdb, select a given clustered PDB, select randomly one exemplar of each cluster and save results as csv files.
+
+positional arguments:
+  mylocalpdb            Path to a local PDB copy (must be obtained by localpdb package)
+
+options:
+  -h, --help            show this help message and exit
+  -redundancy REDUNDANCY
+                        redundancy by sequence identity [100, 95, 90, 70, 50 and 30]
+  -out_dir OUT_DIR      Output directory (default=working dir)
+  -res_lim RES_LIM      resolution limit of structures to be considered (default=2.0)
+  -ncpus NCPUS          number of cpus to use (default = 1)
+  -seed SEED            seed for random number generator (default = None
+```
 ### 2 - compute differential geometry descriptors
 
+For each entry on the clustered pdb, we need to compute our differential geometry descriptors:
+
+```{bash}
+computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/myclstrdPDB.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/myclstrdPDB_updated.csv
+```
+
+```
+usage: computePDBxgeo [-h] --mylocalpdb_path MYLOCALPDB_PATH --sampled_clstrd_path SAMPLED_CLSTRD_PATH [--xgeo_output_dir XGEO_OUTPUT_DIR] [--ncpus NCPUS]
+                      [--out_csv OUT_CSV]
+
+Compute xgeo data for a given set of chain provided.
+
+options:
+  -h, --help            show this help message and exit
+  --mylocalpdb_path MYLOCALPDB_PATH
+                        path to a localpdb database
+  --sampled_clstrd_path SAMPLED_CLSTRD_PATH
+                        path to a sampled clustered csv (produced by getSampleOfCLstrPDB)
+  --xgeo_output_dir XGEO_OUTPUT_DIR
+                        path of a dir to store xgeo csv files (default = xgeo_output_dir+"/xgeo_chains/"
+  --ncpus NCPUS         Number of cpus to be used (default=1)
+  --out_csv OUT_CSV     Description of out_csv
+```
 ### 3 - identify geometrical helices of protein structures
+
+
 
 ### 4 - Select canonical regions
 ----

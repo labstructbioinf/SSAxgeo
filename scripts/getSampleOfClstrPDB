@@ -75,7 +75,7 @@ parser.add_argument('-res_lim', type=float, default=2.0,
 parser.add_argument('-ncpus', type=int, default=1,
                 help='number of cpus to use (default = 1)')
 parser.add_argument('-seed', type=int, default=None,
-                help='seed for random number generator (default = None')
+                help='seed for random number generator (default = None)')
 args = parser.parse_args()
 
 ACCEPTED_RED = [100, 95, 90, 70, 50, 30]

@@ -103,8 +103,6 @@ parser.add_argument('--out_csv', type=str, default='/home/antonio/Projects/HlxCn
 args = parser.parse_args()
 args_dct = vars(args)
 
-print(args_dct["xgep_output_dir"])
-
 mylocalpdb_path = args_dct["mylocalpdb_path"]
 sampled_clstrd_path = args_dct["sampled_clstrd_path"]
 if args_dct["xgeo_output_dir"]:
@@ -112,7 +110,6 @@ if args_dct["xgeo_output_dir"]:
 ncpus = args_dct["ncpus"]
 out_csv = args_dct["out_csv"]
 
-print(xgeo_output_dir)
 
 '''
 mylocalpdb_path = "/home/antonio/Projects/HlxCnt/mypdb/"
