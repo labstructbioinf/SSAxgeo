@@ -12,10 +12,12 @@ import os
 import ssaxgeo.PDBx as PDBx
 import argparse
 
-def decompressGZFiles(mylocalpdb_path):
-    
-    def decompressGZ(gzfile):
-        os.system(f"gunzip {gzfile}")
+
+def decompressGZ(gzfile):
+    os.system(f"gunzip {gzfile}")
+
+
+def decompressGZFiles(mylocalpdb_pat, ncpus=1):
 
     # get list of files to unzip
     def getGZFilesList(base_dir):
@@ -120,7 +122,7 @@ out_csv = "/home/antonio/Projects/HlxCnt/sampled_clustered_pdb_2.csv"
 '''
 
 # decompress chain gz files if needed
-decompressGZFiles(mylocalpdb_path)
+decompressGZFiles(mylocalpdb_path, ncpus=ncpus)
 
 # add paths per entry
 # load samples clustered pdb
