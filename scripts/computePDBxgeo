@@ -13,6 +13,70 @@ import ssaxgeo.PDBx as PDBx
 import argparse
 
 
+# --- | FUNCTIONS | ---
+# Sanitize pdb functions
+def __add_cryst1_record(input_file, output_file):
+    with open(input_file, 'r') as f:
+        content = f.readlines()
+
+    # Check if the file already contains a CRYST1 record
+    has_cryst1 = any(line.startswith('CRYST1') for line in content)
+
+    if not has_cryst1:
+        # Create a new CRYST1 record
+        cryst1_record = 'CRYST1{:9.3f}{:9.3f}{:9.3f}{:7.2f}{:7.2f}{:7.2f} P 1           \n'.format(0.0, 0.0, 0.0, 90.0, 90.0, 90.0)
+
+        # Add the CRYST1 record to the content
+        content.insert(0, cryst1_record)
+
+        # Write the modified content to the output file
+        with open(output_file, 'w') as f:
+            f.writelines(content)
+        #print(f"CRYSYT1 record added to {output_file}")
+
+def validate_pdb_file(pdb_file):
+
+    errors_found = []
+    with open(pdb_file, 'r') as f:
+        content = f.readlines()
+
+    # Check if the file starts with the "HEADER" record
+    #if not content[0].startswith('HEADER'):
+    #    return False
+
+    # Check if the file contains at least one "ATOM" or "HETATM" record
+    has_atom_record = any(line.startswith('ATOM') or line.startswith('HETATM') for line in content)
+    if not has_atom_record:
+        errors_found.append("No ATOM or HETATM records present")
+
+    # Check if the file ends with the "END" record
+    if not content[-1].startswith('END'):
+        errors_found.append("No END at the end of file")
+
+    # Check if the "MODEL" and "ENDMDL" records, if present, occur in pairs
+    model_count = sum(1 for line in content if line.startswith('MODEL'))
+    endmdl_count = sum(1 for line in content if line.startswith('ENDMDL'))
+    if model_count != endmdl_count:
+        errors_found.append("At least one MODEL missing ENDMDL")
+
+    # Check if the "CRYST1" record is present
+    has_cryst1_record = any(line.startswith('CRYST1') for line in content)
+    if not has_cryst1_record:
+        errors_found.append("No CRYST1 record is present")
+
+    return errors_found
+
+def write_sanitized_pdb(errors_found_lst, input_pdb, output_pdb):
+    # check possible errors at input pdb
+    if len(errors_found_lst) == 0:
+        return False
+    
+    if "No CRYST1 record is present" in errors_found_lst:
+        # add cryst1 record if needed
+        __add_cryst1_record(input_pdb, output_pdb)
+
+
+# --- decompress gz files functions
 def decompressGZ(gzfile):
     os.system(f"gunzip {gzfile}")
 
@@ -34,11 +98,13 @@ def decompressGZFiles(mylocalpdb_pat, ncpus=1):
     print(f"    -> {len(gz_list)} files to decompress")
     pool.map(decompressGZ, gz_list)
 
+# --- Compute data from pdbs functions
+
 def compute_xgeo(kwargs):
     #TODO check if xgeo file exists
     # if exists, then just return the file
     pdb_chain_flpth = kwargs["pdb_chain_flpth"]
-    output_dir = kwargs["output_dir"]
+    output_dir = kwargs["xgeo_output_dir"]
     try:
         # assemble pdb chain filepath
         prefix = pdb_chain_flpth.split("/")[-1].split(".")[0]
@@ -55,7 +121,25 @@ def compute_xgeo(kwargs):
     # TODO investigate those erorrs
     except:
         print(f"Error: {pdb_chain_flpth}")
+
+
+def compute_dssp_data(kwargs):
+    pdb_chain_flpth = kwargs["pdb_chain_flpth"]
+    output_dir = kwargs["dssp_output_dir"]
     
+    # assemble pdb chain filepath
+    prefix = pdb_chain_flpth.split("/")[-1].split(".")[0]
+    chain_output_dir = f"{output_dir}/{prefix[1:3]}"
+    # if xgeo csv exists, skip it
+    chain_dssp_flpath = chain_output_dir+"/"+prefix+".dssp"
+    if os.path.exists(chain_dssp_flpath):
+        pass
+    else:
+        os.makedirs(chain_output_dir, exist_ok=True)
+        cmd = f"mkdssp {pdb_chain_flpth} > {chain_dssp_flpath}"
+        os.system(cmd)
+
+# --- | handle paths 
 def addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb):
     '''
     add a new column with pdb chains path and excludes collumns
@@ -70,11 +154,35 @@ def addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb):
     # get list of indexes with missing files
     missing_i = []
     chain_flpath_list = []
-    index = sampled_clstrd_pdb_df.index
-    for i_fl in [[i, getPathFromIdx(i, mylocalpdb_path)] for i in sampled_clstrd_pdb_df.index]:
-        chain_flpath_list.append(i_fl[1])
+    lst_of_paths = [[i, getPathFromIdx(i, mylocalpdb_path)] for i in sampled_clstrd_pdb_df.index]
+    total_paths = len(lst_of_paths)
+    for i, i_fl in enumerate(lst_of_paths):
+        print(f"{i} / {total_paths}", end="\r")
+        # check if there is a sanitized version, use that instead
+        sanitized_path = i_fl[1].split(".")[0]+"_sntzd.pdb"
+        if os.path.isfile(sanitized_path):
+            chain_flpath_list.append(sanitized_path)
+            continue
+        # if the chain file is missing, record as a missing value
         if os.path.isfile(i_fl[1]) == False:
             missing_i.append(i_fl[0])
+            chain_flpath_list.append(i_fl[1])
+        # if the file exist and there is no sanitized file,
+        # write one if needed
+        else:
+            errs_found_lst = validate_pdb_file(i_fl[1])
+            # if the pdb file has no ATOM or HETATOM, consider as missing
+            if "No ATOM or HETATM records present" in errs_found_lst:
+                print(f"ERROR: No ATOM or HETATM records present at {i_fl[1]}")
+                missing_i.append(i_fl[0])
+                chain_flpath_list.append(i_fl[1])
+                continue
+
+            if len(errs_found_lst) > 0:
+                write_sanitized_pdb(errs_found_lst, i_fl[1], sanitized_path)
+                chain_flpath_list.append(sanitized_path)
+                continue
+
     # create new column
     sampled_clstrd_pdb_df["chain_flpath"] = chain_flpath_list 
     # exclude columns with missing files
@@ -98,10 +206,13 @@ parser.add_argument('--mylocalpdb_path', type=str, required=True,
 parser.add_argument('--sampled_clstrd_path', type=str, required=True,
                     help='path to a sampled clustered csv (produced by getSampleOfCLstrPDB)')
 parser.add_argument('--xgeo_output_dir', type=str, default=None, 
-                    help='path of a dir to store xgeo csv files (default = xgeo_output_dir+"/xgeo_chains/"')
+                    help='path of a dir to store xgeo csv files (default = mylocalpdb_path+"/xgeo_chains/"')
 parser.add_argument('--ncpus', type=int, default=1,
                     help='Number of cpus to be used (default=1)')
 parser.add_argument('--out_csv', type=str, default='/home/antonio/Projects/HlxCnt/sampled_clustered_pdb_2.csv', help='Description of out_csv')
+
+parser.add_argument('--dssp_output_dir', type=str, default=None, 
+                    help='path of a dir to store dssp files (default = mylocalpdb_path+"/dssp/"')
 
 args = parser.parse_args()
 args_dct = vars(args)
@@ -110,6 +221,13 @@ mylocalpdb_path = args_dct["mylocalpdb_path"]
 sampled_clstrd_path = args_dct["sampled_clstrd_path"]
 if args_dct["xgeo_output_dir"]:
     xgeo_output_dir = args_dct["xgeo_output_dir"]
+else:
+    xgeo_output_dir = mylocalpdb_path+"/xgeo/"
+if args_dct["dssp_output_dir"]:
+    dssp_output_dir = args_dct["dssp_output_dir"]
+else:
+    dssp_output_dir = mylocalpdb_path+"/dssp/"
+
 ncpus = args_dct["ncpus"]
 out_csv = args_dct["out_csv"]
 
@@ -130,6 +248,11 @@ try:
     assert(os.path.exists(xgeo_output_dir))
 except(AssertionError):
     errors.append(f"ERROR: {xgeo_output_dir} does not exist")
+
+try:
+    assert(os.path.exists(dssp_output_dir))
+except(AssertionError):
+    errors.append(f"ERROR: {dssp_output_dir} does not exist")
 
 try:
     assert(type(ncpus) == int)
@@ -159,17 +282,19 @@ print(f"@ loading {sampled_clstrd_path} ... ")
 sampled_clstrd_pdb_df = pd.read_csv(sampled_clstrd_path, index_col=0)
 sampled_clstrd_pdb_df = addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb_path)
 print(f"    -> {len(sampled_clstrd_pdb_df)} total entries")
-print("@ Compute pdb chain xgeo descriptors...")
 # run melodia on each entry, store xgeo.csv files at mylocalpdb dir
 # check if file already exist to avoid recomputing xgeo data!
 chain_fls = sampled_clstrd_pdb_df["chain_flpath"].values
 kwargs_to_proc = []
 for i in chain_fls:
-    kwargs_to_proc.append({"pdb_chain_flpth":i, "output_dir":xgeo_output_dir})
+    kwargs_to_proc.append({"pdb_chain_flpth":i, "xgeo_output_dir":xgeo_output_dir, "dssp_output_dir":dssp_output_dir})
 
 pool = mp.Pool(ncpus)
+print("@ Compute dssp data...")
+pool.map(compute_dssp_data, kwargs_to_proc)
+print("@ Compute pdb chain xgeo descriptors...")
 pool.map(compute_xgeo, kwargs_to_proc)
-
+pool.close()
 
 print(f"@ writing {out_csv} ...")
 # add xgeo files paths at a new column
