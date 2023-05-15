@@ -136,7 +136,7 @@ def compute_dssp_data(kwargs):
         pass
     else:
         os.makedirs(chain_output_dir, exist_ok=True)
-        cmd = f"mkdssp {pdb_chain_flpth} > {chain_dssp_flpath}"
+        cmd = f"mkdssp --output-forma dssp {pdb_chain_flpth} > {chain_dssp_flpath}"
         os.system(cmd)
 
 # --- | handle paths 
