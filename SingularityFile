@@ -2,24 +2,32 @@
 Bootstrap: docker
 From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
 
+%files
+   ../SSAxgeo/ /opt/
 %post
-
-
 apt-get update -qq -y
-apt-get install -y rsync wget python3 python3-pip git nano
+
+apt install -y libcifpp-dev dssp
+
+apt install -y rsync wget python3 python3-pip git nano cmake
+
+cd /opt/
+
 
 mkdir /app/
 cd /app/
+
+# install dependencies
+pip3 install localpdb pandas nglview seaborn scipy scikit-learn
+
 # install Melodia
 git clone --recursive https://github.com/rwmontalvao/Melodia.git
 cd Melodia/
 python3 setup.py install
 
-# install dependencies
-pip3 install localpdb pandas nglview seaborn scipy scikit-learn
-
 #install SSAxgeo
-cd /app/
+#mv /opt/SSAxgeo /app/
+#cd /app/SSAxgeo
 git clone https://github.com/labstructbioinf/SSAxgeo.git
 cd SSAxgeo/
 pip3 install -e ./
@@ -31,6 +39,9 @@ exec /bin/bash "$@"
 exec /bin/bash "$@"
 
 %test
+    mkdssp -h 
     python3 -c "import melodia"
     ssaxgeo -h
+    mkdssp -h 
+    dssp -h
     localpdb_setup -h
