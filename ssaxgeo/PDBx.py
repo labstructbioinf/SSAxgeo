@@ -30,9 +30,10 @@ def intfy_res(row):
 
 def load_xgeo_df(xgeo_flpath):
     '''Load xgeo dataframe from flexgeo output file'''
-    xgeo_df = pd.read_csv(xgeo_flpath, header=None)
-    xgeo_df.columns=['conf_n', 'res', 'curv', 'tor', 'arc','wri',
-                         'ca_x', 'ca_y', 'ca_z', 'seq']
+    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False)#, header=None)
+    xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
+    #xgeo_df.columns=['conf_n', 'res', 'curv', 'tor', 'arc','wri',
+    #                     'ca_x', 'ca_y', 'ca_z', 'seq']
 
     return xgeo_df
 
@@ -667,21 +668,22 @@ class entry:
         # load dssp dataframe
         dssp_obj = dssp.DSSPData(dssp_flpath)
         dssp_data = dssp_obj.getDSSP_data()
-        # rename column for merge and set type as int
-        dssp_data.rename(columns={'resnum':'res'}, inplace=True)
+        if len(dssp_data) > 0:
+            # rename column for merge and set type as int
+            dssp_data.rename(columns={'resnum':'res'}, inplace=True)
 
-        def intfy(row):
-            try:
-                return int(row)
-            except(ValueError):
-                return None
+            def intfy(row):
+                try:
+                    return int(row)
+                except(ValueError):
+                    return None
 
-        dssp_data['res'] = dssp_data['res'].apply(intfy)
-        # merge new data =)
-        self.xdata_df = pd.merge(self.xdata_df, dssp_data, on='res')
-        # get pp2 assignment
-        if dssp_pp2==True:
-            self.xdata_df['ss_pp2'] = self.xdata_df.apply(dssp_pp2_assgn,axis=1)
+            dssp_data['res'] = dssp_data['res'].apply(intfy)
+            # merge new data =)
+            self.xdata_df = pd.merge(self.xdata_df, dssp_data, on='res')
+            # get pp2 assignment
+            if dssp_pp2==True:
+                self.xdata_df['ss_pp2'] = self.xdata_df.apply(dssp_pp2_assgn,axis=1)
 
     # ~~~ PLOT METHODS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def plot_arrows(self, myDIR=None, save_fig=False, show_plot=True,
