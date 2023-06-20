@@ -116,10 +116,10 @@ def get_labels(entry):
 
 # ~~! PANDAS APPLY !~~
 def load_entries(row):
-    entry = PDBx.entry(coord_flpath=row['chain_flspth'],
-            xgeo_flpath=row['xgeo_flspth'],
-            pdbid=row['pdbid'], chain=row['chain'])
-    entry.load_dssp_data(row['dssp_flspth'])
+    entry = PDBx.entry(coord_flpath=row['chain_flpath'],
+            xgeo_flpath=row['xgeo_chain_flpath'],
+            pdbid=row['pdb'], chain=row['chain'])
+    entry.load_dssp_data(row['dssp_chain_flpath'])
     return entry
 
 # ~~! SS label algorithm !~~~
@@ -147,17 +147,22 @@ print('-----------------------------------------------------------------------')
 
 # load lpdb data
 print('@ loading entries...')
-lPDB_df = pd.read_csv(lpdb_csv_pth, index_col=0)
-print('   > ', len(lPDB_df), 'total entries on lPDB metadata csv')
+#lPDB_df = pd.read_csv(lpdb_csv_pth, index_col=0)
+#print('   > ', len(lPDB_df), 'total entries on lPDB metadata csv')
 # get BC sample
-df_filter = get_bc_sample(lPDB_df, bc_group+'_grp')
+#df_filter = get_bc_sample(lPDB_df, bc_group+'_grp')
 # generate group
+
+df_filter = pd.read_csv(lpdb_csv_pth, index_col=0)
+print(len(df_filter))
+# drop rows with nan values on any col
+df_filter = df_filter.dropna()
+print(len(df_filter.dropna()))
+
 grp = PDBx.group('test')
 # load data
 grp.entries = df_filter.apply(load_entries, axis=1)
 print('>> ', len(grp.entries), 'total loaded entries')
-
-# TODO Everything bellow needs to be done on the new csv
 
 # 1 - Normalization
 print('@ normalization...')
@@ -173,9 +178,9 @@ workers.close()
 
 # 3 - standardize C alpha coordinates
 print('@ standardize coordinates...')
-workers = mp.Pool(processes=NCPUS)
-output = workers.map(standardize_coords,output)
-workers.close()
+#workers = mp.Pool(processes=NCPUS)
+#output = workers.map(standardize_coords,output)
+#workers.close()
 
 # 4 - get labels
 print('@ labeling residues...')
