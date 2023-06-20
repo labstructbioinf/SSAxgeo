@@ -200,6 +200,9 @@ def get_all_files_in_dir(directory):
             file_paths.append(file_path)
     return file_paths
 
+# add chain
+def get_chain(row_chflpt):
+    return row_chflpt.split("/")[-1].split(".")[0].split("_")[1]
 
 parser = argparse.ArgumentParser(description='Compute xgeo data for a given set of chain provided.')
 parser.add_argument('--mylocalpdb_path', type=str, required=True,
@@ -338,6 +341,8 @@ missing_dssp_N = len(sampled_clstrd_pdb_df.loc[sampled_clstrd_pdb_df["dssp_chain
 print(f"    -> {missing_xgeo_N} with no xgeo data. (out of {len(sampled_clstrd_pdb_df)})")
 print(f"    -> {missing_dssp_N} with no dssp data. (out of {len(sampled_clstrd_pdb_df)})")
 
+# add chain col
+sampled_clstrd_pdb_df["chain"] = sampled_clstrd_pdb_df["chain_flpath"].apply(get_chain)
 # update sample clustered pdb csv
 sampled_clstrd_pdb_df.to_csv(out_csv)
 print(":: DONE ::")
