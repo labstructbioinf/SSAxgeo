@@ -135,7 +135,8 @@ class DSSPData:
                             self.phi[i], self.psi[i]])
 
       Data = pd.DataFrame(self.data)
-      Data.columns = ['resnum', 'aa', 'ss',
+      if len(Data) > 0:
+        Data.columns = ['resnum', 'aa', 'ss',
                       'h_nho1_A','h_nho1_en',
                       'h_nho2_A','h_nho2_en',
                       'h_ohn1_A','h_ohn1_en',
