@@ -209,6 +209,7 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
         if label == False:
             class_col = 'cluster'
         #----------------------------------------------------------------------#
+        
         for n, i in enumerate(frag_idx_arr):
             # skip fragments bellow lengh limit
             size = frag_len_arr[n]
@@ -220,17 +221,117 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
 
             # get hlx dataframe
             hlx_df = pdbx_df.iloc[start_i:start_i+size]
-
             #get data to store
             res_s = hlx_df['res'].iloc[0]
             res_f = hlx_df['res'].iloc[-1]
             clstr = frag_clstr_arr[n]
-            dssp = hlx_df['ss'].values
-            seq = hlx_df['aa'].values
 
-            if dssp_pp2 == True:
-                dssp_pp2_values = hlx_df['ss_pp2'].values
+            empty_dssp = False
+            # handle empty dssp data
+            if "ss" not in hlx_df.columns:
+                empty_dssp = True
+                print(f"WARNING : NO DSSP DATA FOR {hlx_df['code'].iloc[0]}")
 
+            if empty_dssp == False:
+                dssp = hlx_df['ss'].values            
+                seq = hlx_df['aa'].values
+                if dssp_pp2 == True:
+                    dssp_pp2_values = hlx_df['ss_pp2'].values
+                # phi psi raw
+                phi_raw = hlx_df['phi'].values
+                psi_raw = hlx_df['psi'].values
+
+                # h_nho1_en
+                ho1en_col = hlx_df['h_nho1_en']
+                ho1en_mean, ho1en_median, ho1en_std = get_mean_std_median_of(ho1en_col)
+                ho1ens = ho1en_col.values
+
+                # h_nho1_A
+                ho1A_col = hlx_df['h_nho1_A']
+                ho1A_mean, ho1A_median, ho1A_std = get_mean_std_median_of(ho1A_col)
+                ho1As = ho1A_col.values
+
+                # h_nho2_en
+                ho2en_col = hlx_df['h_nho2_en']
+                ho2en_mean, ho2en_median, ho2en_std = get_mean_std_median_of(ho2en_col)
+                ho2ens = ho2en_col.values
+
+                # h_nho2_A
+                ho2A_col = hlx_df['h_nho2_A']
+                ho2A_mean, ho2A_median, ho2A_std = get_mean_std_median_of(ho2A_col)
+                ho2As = ho2A_col.values
+
+                # h_ohn1_en
+                hn1en_col = hlx_df['h_ohn1_en']
+                hn1en_mean, hn1en_median, hn1en_std = get_mean_std_median_of(hn1en_col)
+                hn1ens = hn1en_col.values
+
+                # h_ohn1_A
+                hn1A_col = hlx_df['h_ohn1_A']
+                hn1A_mean, hn1A_median, hn1A_std = get_mean_std_median_of(hn1A_col)
+                hn1As = hn1A_col.values
+
+                # h_ohn2_en
+                hn2en_col = hlx_df['h_ohn2_en']
+                hn2en_mean, hn2en_median, hn2en_std = get_mean_std_median_of(hn2en_col)
+                hn2ens = hn2en_col.values
+
+                # h_ohn2_A
+                hn2A_col = hlx_df['h_ohn2_A']
+                hn2A_mean, hn2A_median, hn2A_std = get_mean_std_median_of(hn2A_col)
+                hn2As = hn2A_col.values
+            
+            if empty_dssp == True:
+                dssp = None
+                seq = None
+                if dssp_pp2 == True:
+                    dssp_pp2_values = None
+                # phi psi raw
+                phi_raw = None
+                psi_raw = None
+
+
+                # h_nho1_en
+                ho1en_col = None
+                ho1en_mean, ho1en_median, ho1en_std = None, None, None
+                ho1ens = None
+
+                # h_nho1_A
+                ho1A_col = None
+                ho1A_mean, ho1A_median, ho1A_std = None, None, None
+                ho1As = None
+
+                # h_nho2_en
+                ho2en_col = None
+                ho2en_mean, ho2en_median, ho2en_std = None, None, None
+                ho2ens = None
+
+                # h_nho2_A
+                ho2A_col = None
+                ho2A_mean, ho2A_median, ho2A_std = None, None, None
+                ho2As = None
+
+                # h_ohn1_en
+                hn1en_col = None
+                hn1en_mean, hn1en_median, hn1en_std = None, None, None
+                hn1ens = None
+
+                # h_ohn1_A
+                hn1A_col = None
+                hn1A_mean, hn1A_median, hn1A_std = None, None, None
+                hn1As = None
+
+                # h_ohn2_en
+                hn2en_col = None
+                hn2en_mean, hn2en_median, hn2en_std = None, None, None
+                hn2ens = None
+
+                # h_ohn2_A
+                hn2A_col = None
+                hn2A_mean, hn2A_median, hn2A_std = None, None, None
+                hn2As = None
+            
+            # Xgeo data
             # wri
             wri_col = hlx_df['wri']
             w_mean, w_median, w_std = get_mean_std_median_of(wri_col)
@@ -261,49 +362,7 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
             cs_mean, cs_median, cs_std = get_mean_std_median_of(cur_col_s)
             cs_raw = cur_col_s.values
 
-            # phi psi raw
-            phi_raw = hlx_df['phi'].values
-            psi_raw = hlx_df['psi'].values
 
-            # h_nho1_en
-            ho1en_col = hlx_df['h_nho1_en']
-            ho1en_mean, ho1en_median, ho1en_std = get_mean_std_median_of(ho1en_col)
-            ho1ens = ho1en_col.values
-
-            # h_nho1_A
-            ho1A_col = hlx_df['h_nho1_A']
-            ho1A_mean, ho1A_median, ho1A_std = get_mean_std_median_of(ho1A_col)
-            ho1As = ho1A_col.values
-
-            # h_nho2_en
-            ho2en_col = hlx_df['h_nho2_en']
-            ho2en_mean, ho2en_median, ho2en_std = get_mean_std_median_of(ho2en_col)
-            ho2ens = ho2en_col.values
-
-            # h_nho2_A
-            ho2A_col = hlx_df['h_nho2_A']
-            ho2A_mean, ho2A_median, ho2A_std = get_mean_std_median_of(ho2A_col)
-            ho2As = ho2A_col.values
-
-            # h_ohn1_en
-            hn1en_col = hlx_df['h_ohn1_en']
-            hn1en_mean, hn1en_median, hn1en_std = get_mean_std_median_of(hn1en_col)
-            hn1ens = hn1en_col.values
-
-            # h_ohn1_A
-            hn1A_col = hlx_df['h_ohn1_A']
-            hn1A_mean, hn1A_median, hn1A_std = get_mean_std_median_of(hn1A_col)
-            hn1As = hn1A_col.values
-
-            # h_ohn2_en
-            hn2en_col = hlx_df['h_ohn2_en']
-            hn2en_mean, hn2en_median, hn2en_std = get_mean_std_median_of(hn2en_col)
-            hn2ens = hn2en_col.values
-
-            # h_ohn2_A
-            hn2A_col = hlx_df['h_ohn2_A']
-            hn2A_mean, hn2A_median, hn2A_std = get_mean_std_median_of(hn2A_col)
-            hn2As = hn2A_col.values
 
             hlx = {
                 # metadata
