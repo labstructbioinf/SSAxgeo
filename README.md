@@ -54,7 +54,7 @@ This process most likely will take a long time.
 ### 1 - Get a sampling of a clustered PDB
 
 Once the local pdb copy is in place, compute a clustered pdb with a given sequence redundancy.
-For instance, with the command bellow the user can obtain clusters for 30% of redundance of each entry with at least 2 angstron resolutions.
+For instance, with the command bellow the user can obtain entries clustered by 30% of redundance and entry with at least 2 angstron resolutions.
 
 ```{bash}
 getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
@@ -82,7 +82,7 @@ options:
 For each entry on the clustered pdb, we need to compute our differential geometry descriptors:
 
 ```{bash}
-computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/myclstrdPDB.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/myclstrdPDB_updated.csv
+computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/sampled_clust-30.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/myclstrdPDB_updated.csv
 ```
 
 ```
@@ -218,3 +218,24 @@ To compute the canonical regions used for SSAx, one can use the _GetCanonicalClu
                             (default=False)
 
 ### Algorithm description
+
+---
+## TODO: (ver 1.0)
+
+- [x] bring diffgeo to be part of ssaxgeo
+- [x] migrate code for canonical regions detection to rely on localpdb
+- [x] add/update and adapt scripts to reproduce paper results more easily (via CLI)
+- [ ] adapt old code scripts to rely on new structure 
+  - [x] ssaxgeo
+  - [x] computePDBxgeo
+  - [x] getSampleOfClstrPDB
+  - [x] prepare_BCX_df
+  - [ ] getCanonicalClusters
+- [ ] cosmetics changes  
+- [ ] update documentation
+
+## TODO: (ver 1.1)
+- [ ] add citation
+- [ ] add pymol viz support
+- [ ] add xgeo Dlang code suport
+
