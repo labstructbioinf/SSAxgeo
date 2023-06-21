@@ -133,17 +133,17 @@ class DSSPData:
                             h_ohn1_A, h_ohn1_en,
                             h_ohn2_A, h_ohn2_en,
                             self.phi[i], self.psi[i]])
-
-      Data = pd.DataFrame(self.data)
-      if len(Data) > 0:
-        Data.columns = ['resnum', 'aa', 'ss',
-                      'h_nho1_A','h_nho1_en',
-                      'h_nho2_A','h_nho2_en',
-                      'h_ohn1_A','h_ohn1_en',
-                      'h_ohn2_A','h_ohn2_en',
-                      'phi', 'psi']
-      #self.data = Data.drop_duplicates('resnum')
-      self.data = Data
+      cols_nms = ['resnum', 'aa', 'ss',
+                'h_nho1_A','h_nho1_en',
+                'h_nho2_A','h_nho2_en',
+                'h_ohn1_A','h_ohn1_en',
+                'h_ohn2_A','h_ohn2_en',
+                'phi', 'psi']
+      Data = pd.DataFrame(self.data, columns=cols_nms)
+      #if len(Data) > 0:
+      #  Data.columns = 
+      self.data = Data.drop_duplicates('resnum')
+      #self.data = Data
       return self.data
 
 
