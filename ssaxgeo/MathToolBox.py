@@ -356,8 +356,7 @@ def get_d2_pC_min(p, C):
 
 def run_kmeans_at(arr_, n_clusters, random_state=0, n_jobs=1, **kwargs):
     '''run kmeans clustering at ND numpy array.'''
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state,
-                    n_jobs=n_jobs).fit(arr_)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state).fit(arr_)
 
     return kmeans.labels_
 
