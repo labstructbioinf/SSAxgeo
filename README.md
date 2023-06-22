@@ -4,13 +4,6 @@ Here all the methods/scripts/notebooks related to Helix Continuum project are st
 
 ---
 
-## TODO: (ver 1.0)
-
-- [x] bring diffgeo to be part of ssaxgeo
-- [ ] migrate code for canonical regions detection to rely on localpdb
-- [ ] add/update and adapt scripts to reproduce paper results more easily (via CLI)
-- [ ] update documentation
-
 ## How to? (quick and dirty)
 
 ### Install
