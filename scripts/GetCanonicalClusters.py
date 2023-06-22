@@ -142,7 +142,7 @@ based on a representative set of protein structures.
 parser = argparse.ArgumentParser(description=desc)
 parser.add_argument('grp_flpath', type=str,
                 help='pickle file path for a PDBx.group object')
-parser.add_argument('-save_dir', type=str, default=os.getcwd(),
+parser.add_argument('-save_dir', type=str, default=os.getcwd()+"/",
                 help='directory to save output files (default= working dir)')
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -156,7 +156,7 @@ parser.add_argument('-pp2_cluster_n', type=str, default=2,
 
 parser.add_argument('-min_cluster_size', type=int, default=15,
   help='''
-  Minimum number of points that HDBSCAN can should consider for a cluster
+  Minimum number of points that HDBSCAN should consider for a cluster
   (default=15)
   ''')
 parser.add_argument('-pp2_max', type=float, default=0.07,
