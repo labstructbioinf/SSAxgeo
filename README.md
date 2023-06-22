@@ -224,6 +224,7 @@ To compute the canonical regions used for SSAx, one can use the _GetCanonicalClu
   - [x] getSampleOfClstrPDB
   - [x] prepare_BCX_df
   - [ ] getCanonicalClusters
+- [ ] improve sanitize pdb function to comply with melodia
 - [ ] cosmetics changes  
 - [ ] update documentation
 
@@ -231,4 +232,3 @@ To compute the canonical regions used for SSAx, one can use the _GetCanonicalClu
 - [ ] add citation
 - [ ] add pymol viz support
 - [ ] add xgeo Dlang code suport
-
