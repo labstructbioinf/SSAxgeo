@@ -15,28 +15,64 @@ import argparse
 
 # --- | FUNCTIONS | ---
 # Sanitize pdb functions
-def __add_cryst1_record(input_file, output_file):
-    with open(input_file, 'r') as f:
-        content = f.readlines()
+def __add_cryst1_record(input_content):
+
 
     # Check if the file already contains a CRYST1 record
-    has_cryst1 = any(line.startswith('CRYST1') for line in content)
+    has_cryst1 = any(line.startswith('CRYST1') for line in input_content)
 
     if not has_cryst1:
         # Create a new CRYST1 record
         cryst1_record = 'CRYST1{:9.3f}{:9.3f}{:9.3f}{:7.2f}{:7.2f}{:7.2f} P 1           \n'.format(0.0, 0.0, 0.0, 90.0, 90.0, 90.0)
 
         # Add the CRYST1 record to the content
-        content.insert(0, cryst1_record)
-
+        input_content.insert(0, cryst1_record)
         # Write the modified content to the output file
-        with open(output_file, 'w') as f:
-            f.writelines(content)
-        #print(f"CRYSYT1 record added to {output_file}")
+    return input_content
+    
+def __find_residues_with_missing_ca(pdb_file_path):
+    with open(pdb_file_path, 'r') as pdb_file:
+        atom_lines = [line for line in pdb_file if line.startswith('ATOM')]
+
+    res_CA_dct = {}
+    missing_ca_residues = []
+
+    for line in atom_lines:
+        atom_name = line[12:16].strip()
+        residue_name = line[17:20].strip()
+        res_number = line[22:26].strip()
+        
+        if res_number not in res_CA_dct.keys():
+            res_CA_dct[res_number] = False
+        
+        if atom_name == 'CA':
+            res_CA_dct[res_number] = True
+
+    for res in res_CA_dct.keys():
+        if res_CA_dct[res] == False:
+            missing_ca_residues.append(res)
+
+    return missing_ca_residues
+
+def __delete_residues(content, residues_to_exclude):
+    output_content = []
+    for line in content:
+        if line.startswith('ATOM'):
+            residue_number = line[22:26].strip()
+            if residue_number not in residues_to_exclude:
+                output_content.append(line)
+        else:
+            output_content.append(line)
+    return output_content
+
+
 
 def validate_pdb_file(pdb_file):
 
     errors_found = []
+    # get list os res with missing CA atoms
+    res_miss_ca_lst = __find_residues_with_missing_ca(pdb_file)
+
     with open(pdb_file, 'r') as f:
         content = f.readlines()
 
@@ -63,18 +99,26 @@ def validate_pdb_file(pdb_file):
     has_cryst1_record = any(line.startswith('CRYST1') for line in content)
     if not has_cryst1_record:
         errors_found.append("No CRYST1 record is present")
+    return errors_found, res_miss_ca_lst
 
-    return errors_found
-
-def write_sanitized_pdb(errors_found_lst, input_pdb, output_pdb):
+def write_sanitized_pdb(errors_found_lst, input_pdb, output_pdb, res_miss_ca_lst):
     # check possible errors at input pdb
     if len(errors_found_lst) == 0:
         return False
     
+    with open(input_pdb, 'r') as f:
+        content = f.readlines()
+
     if "No CRYST1 record is present" in errors_found_lst:
         # add cryst1 record if needed
-        __add_cryst1_record(input_pdb, output_pdb)
+        content = __add_cryst1_record(content)
+    # remove residues with missing CA
+    if len(res_miss_ca_lst) > 0:
+        print(f"WARN: residues with missing CA {res_miss_ca_lst} from {input_pdb} will not be considered")
+        content = __delete_residues(content, res_miss_ca_lst)
 
+    with open(output_pdb, 'w') as f:
+        f.writelines(content)
 
 # --- decompress gz files functions
 def decompressGZ(gzfile):
@@ -122,7 +166,7 @@ def compute_xgeo(kwargs):
     # TODO investigate those erorrs
     except:
         print(f"Error: {pdb_chain_flpth}")
-
+        print(stop)
 
 def compute_dssp_data(kwargs):
     pdb_chain_flpth = kwargs["pdb_chain_flpth"]
@@ -171,7 +215,7 @@ def addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb):
         # if the file exist and there is no sanitized file,
         # write one if needed
         else:
-            errs_found_lst = validate_pdb_file(i_fl[1])
+            errs_found_lst, missing_ca_res_lst = validate_pdb_file(i_fl[1])
             # if the pdb file has no ATOM or HETATOM, consider as missing
             if "No ATOM or HETATM records present" in errs_found_lst:
                 print(f"ERROR: No ATOM or HETATM records present at {i_fl[1]}")
@@ -180,7 +224,7 @@ def addPDBChainsFlPaths(sampled_clstrd_pdb_df, mylocalpdb):
                 continue
 
             if len(errs_found_lst) > 0:
-                write_sanitized_pdb(errs_found_lst, i_fl[1], sanitized_path)
+                write_sanitized_pdb(errs_found_lst, i_fl[1], sanitized_path, missing_ca_res_lst)
                 chain_flpath_list.append(sanitized_path)
                 continue
 
