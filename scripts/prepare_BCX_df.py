@@ -15,37 +15,7 @@ import multiprocessing as mp
 import argparse
 import os
 ##
-desc = '''
-This script load precompute data from a lPDB copy, get a sample from a given
-clustered PDB, compute normalized and smoothed values for each entry,
-standardize coordinates and run the SSEx assignment on all residues.
 
-'''
-script_dir = os.path.dirname(os.path.realpath(__file__))
-
-
-parser = argparse.ArgumentParser(description=desc)
-parser.add_argument('lpdb_csv',type=str,help='path to a localPDB metadata csv')
-parser.add_argument('bc_group_col', type=str,
-   help="column name with cluster number for each entry (ex. 'bc-90' for BC90)")
-parser.add_argument('-ncpus', type=int, default=1,
-    help='number of cpus to use (default=1)')
-parser.add_argument('-save_dir', type=str, default=os.getcwd(),
-    help='set directory for output files (default=Working dir)')
-parser.add_argument('-canonical_dir',type=str,default=script_dir+'/canonical/',
-    help='''
-set directory of canonical regions to be loaded
-(default=canonical folder at this script directory)
-''')
-
-args = parser.parse_args()
-parser.print_help()
-
-NCPUS = args.ncpus
-lpdb_csv_pth = args.lpdb_csv
-save_dir = args.save_dir
-bc_group = args.bc_group_col
-CANONICAL_DIR = args.canonical_dir
 
 ### FUNCTIONS ##################################################################
 
@@ -95,6 +65,7 @@ def norm_entries(entry):
     # Normalized KT
     entry.get_normalize_xdf(c_norm=True, k_min=c_min, k_max=c_max, t_min=t_min,
                             t_max=t_max)
+    assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
     return entry
 
 def smooth_entries(entry):
@@ -102,6 +73,8 @@ def smooth_entries(entry):
     entry.add_smoothed('curv_norm')
     entry.add_smoothed('tor_norm')
     entry.add_smoothed('wri')
+    assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
+
     return entry
 
 def standardize_coords(entry):
@@ -111,8 +84,17 @@ def standardize_coords(entry):
 def get_labels(entry):
     entry.get_dist2canonical(pi_df=pi_df, alpha_df=alpha_df, three_df=three_df, pp2_df=pp2_df)
     entry.get_labels(dist_min=0.2, pp2_max=0.07)
-    entry.detect_hlx(show_plot=False, selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'])
+    assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
+
     return entry
+
+def detect_helices(entry):
+    entry.detect_hlx(show_plot=False, 
+                     selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'],
+                     label=False)
+    assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
+    return entry
+
 
 # ~~! PANDAS APPLY !~~
 def load_entries(row):
@@ -120,29 +102,64 @@ def load_entries(row):
             xgeo_flpath=row['xgeo_chain_flpath'],
             pdbid=row['pdb'], chain=row['chain'])
     entry.load_dssp_data(row['dssp_chain_flpath'])
-    return entry
+    assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
 
-# ~~! SS label algorithm !~~~
-alpha_df = pck.load(open(CANONICAL_DIR+'alpha_can.p', 'rb'))
-pi_df = pck.load(open(CANONICAL_DIR+'pi_can.p', 'rb'))
-three_df = pck.load(open(CANONICAL_DIR+'three_can.p', 'rb'))
-pp2_df = pck.load(open(CANONICAL_DIR+'pp2_can.p', 'rb'))
+    return entry
 
 def get_labels(entry):
     entry.get_dist2canonical(pi_df=pi_df, alpha_df=alpha_df, three_df=three_df, pp2_df=pp2_df)
     entry.get_labels(dist_min=0.2, pp2_max=0.07)
     entry.detect_hlx(show_plot=False, selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'])
+    assert(entry.xdata_df != None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
+
     return entry
 
 #-------------------------------------------------------------------------------
 
+
+desc = '''
+This script load precompute data from a lPDB copy, get a sample from a given
+clustered PDB, compute normalized and smoothed values for each entry,
+standardize coordinates and run the SSEx assignment on all residues.
+
+'''
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+
+parser = argparse.ArgumentParser(description=desc)
+parser.add_argument('lpdb_csv',type=str,help='path to a localPDB metadata csv')
+parser.add_argument('bc_group_col', type=str,
+   help="column name with cluster number for each entry (ex. 'bc-90' for BC90)")
+parser.add_argument('-ncpus', type=int, default=1,
+    help='number of cpus to use (default=1)')
+parser.add_argument('-save_dir', type=str, default=os.getcwd(),
+    help='set directory for output files (default=Working dir)')
+parser.add_argument("--do_res_labeling", default=False,
+                    help="Do residues labeling" )
+parser.add_argument('-canonical_dir',type=str,default=script_dir+'/canonical/',
+    help='''
+set directory of canonical regions to be loaded
+(default=canonical folder at this script directory)
+''')
+
+args = parser.parse_args()
+
+NCPUS = args.ncpus
+lpdb_csv_pth = args.lpdb_csv
+save_dir = args.save_dir
+bc_group = args.bc_group_col
+CANONICAL_DIR = args.canonical_dir
+do_res_labeling = args.do_res_labeling
+
+
 ### INPUTS #####################################################################
 print('----- INPUTS ----------------------------------------------------------')
-print(': NCPUS         = ', NCPUS)
-print(': lPDB_CSV_PTH  = ', lpdb_csv_pth)
-print(': SAVE_DIR      = ', save_dir)
-print(': BC_GROUP      = ', bc_group)
-print(': CANONICAL_DIR = ', CANONICAL_DIR)
+print(': NCPUS           = ', NCPUS)
+print(': lPDB_CSV_PTH    = ', lpdb_csv_pth)
+print(': SAVE_DIR        = ', save_dir)
+print(': BC_GROUP        = ', bc_group)
+print(': CANONICAL_DIR   = ', CANONICAL_DIR)
+print(f': DO_RES_LABELING = {[do_res_labeling]}')
 print('-----------------------------------------------------------------------')
 
 # load lpdb data
@@ -182,11 +199,24 @@ print('@ standardize coordinates...')
 #output = workers.map(standardize_coords,output)
 #workers.close()
 
-# 4 - get labels
-print('@ labeling residues...')
+print('@ detect geometrical helices...')
 workers = mp.Pool(processes=NCPUS)
-output = workers.map(get_labels,output)
+output = workers.map(detect_helices,output)
 workers.close()
+
+
+# 4 - get labels
+if do_res_labeling == True:
+    # ~~! SS label algorithm !~~~
+    alpha_df = pck.load(open(CANONICAL_DIR+'alpha_can.p', 'rb'))
+    pi_df = pck.load(open(CANONICAL_DIR+'pi_can.p', 'rb'))
+    three_df = pck.load(open(CANONICAL_DIR+'three_can.p', 'rb'))
+    pp2_df = pck.load(open(CANONICAL_DIR+'pp2_can.p', 'rb'))
+
+    print('@ labeling residues...')
+    workers = mp.Pool(processes=NCPUS)
+    output = workers.map(get_labels,output)
+    workers.close()
 
 # store at group object
 grp.entries = output
