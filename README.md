@@ -237,10 +237,11 @@ To compute the canonical regions used for SSAx, one can use the _GetCanonicalClu
   - [x] getSampleOfClstrPDB
   - [x] prepare_BCX_df
   - [ ] getCanonicalClusters
+    - [ ] convert getCanonical to a notebook
 - [x] improve sanitize pdb function to comply with melodia
-- [ ] add ssaxgeo on cli via container (not in path)
 - [ ] cosmetics changes
 - [ ] update documentation
+- [ ] test end-to-end
 
 ## TODO: (ver 1.1)
 - [ ] add citation
