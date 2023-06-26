@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+__author__ = "Antonio Marinho da Silva Neto"
+__license__ = "MIT License"
+__version__ = "1.0_dev"
+__maintainer__ = "Antonio Marinho da Silva Neto"
+__email__ = "amarinhosn@pm.me"
+__status__ = "Alpha"
+
 import ssaxgeo.PDBx as PDBx
 import pandas as pd
 import numpy as np
@@ -18,39 +26,6 @@ import os
 
 
 ### FUNCTIONS ##################################################################
-
-def get_bc_sample(lPDB_df, bc_colnm):
-    '''
-    filter lPDB dataframe for a representative set of BCX0 group
-    Parameters
-    ---
-    lPDB_df: <pandas dataframe>; metadata of a local PDB metadata
-    bc_column: <str>; columns of the dataframe to be used
-
-    Return
-    ---
-    <pandas dataframe> with a sample obtained
-    '''
-    df = lPDB_df
-    # hard filters [res < 2.0; only proteins and crystallographic structures]
-    df_filter = df.loc[(df['res']<=2.0)&
-                       (df['res']>0)&
-                       (df['method']=='diffraction')&
-                       (df['mol_type']=='prot')]
-
-    # get one random entrie per group
-    groups = df_filter.groupby(bc_colnm)
-    exemplars_lst = []
-
-    for name, group in groups:
-        try:
-            idxs = random.sample(list(group.index), 1)
-        except(ValueError):
-            idxs = random.sample(list(group.index), 1)
-        exemplars_lst.append(idxs)
-
-    flatten = lambda l: [item for sublist in l for item in sublist]
-    return df_filter.loc[flatten(exemplars_lst)]
 
 # ~~! paralelization !~~
 def norm_entries(entry):
@@ -118,9 +93,9 @@ def get_labels(entry):
 
 
 desc = '''
-This script load precompute data from a lPDB copy, get a sample from a given
-clustered PDB, compute normalized and smoothed values for each entry,
-standardize coordinates and run the SSEx assignment on all residues.
+This script load precompute data from a lPDB copy, compute normalized and smoothed values for xgeo 
+descriptors for each entry, cluster residues and generate "fragments" and, optionally, run the SSEx 
+assignment using pre-computed canonical regions.
 
 '''
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -134,7 +109,7 @@ parser.add_argument('-ncpus', type=int, default=1,
     help='number of cpus to use (default=1)')
 parser.add_argument('-save_dir', type=str, default=os.getcwd(),
     help='set directory for output files (default=Working dir)')
-parser.add_argument("--do_res_labeling", default=False,
+parser.add_argument("--do_res_labeling", action="store_true",
                     help="Do residues labeling" )
 parser.add_argument('-canonical_dir',type=str,default=script_dir+'/canonical/',
     help='''
@@ -163,43 +138,40 @@ print(f': DO_RES_LABELING = {[do_res_labeling]}')
 print('-----------------------------------------------------------------------')
 
 # load lpdb data
-print('@ loading entries...')
-#lPDB_df = pd.read_csv(lpdb_csv_pth, index_col=0)
-#print('   > ', len(lPDB_df), 'total entries on lPDB metadata csv')
-# get BC sample
-#df_filter = get_bc_sample(lPDB_df, bc_group+'_grp')
-# generate group
+print(f'@ loading data from {lpdb_csv_pth}...')
 
-df_filter = pd.read_csv(lpdb_csv_pth, index_col=0)
-print(len(df_filter))
+df = pd.read_csv(lpdb_csv_pth, index_col=0)
+print(f"  > {len(df)} total entries found")
+
 # drop rows with nan values on any col
-df_filter = df_filter.dropna()
-print(len(df_filter.dropna()))
-
+print("   - drop rows with NAN values")
+df_filtered = df.dropna()
+print(f"   > {len(df_filtered.dropna())} remains")
+# loading pdbx entries
 grp = PDBx.group('test')
-# load data
-grp.entries = df_filter.apply(load_entries, axis=1)
+print("@ loading individual entries data...")
+grp.entries = df_filtered.apply(load_entries, axis=1)
 print('>> ', len(grp.entries), 'total loaded entries')
 
 # 1 - Normalization
-print('@ normalization...')
+print('@ normalize data...')
 workers = mp.Pool(processes=NCPUS)
 output = workers.map(norm_entries,grp.entries.values)
 workers.close()
 
 # 2 - smoothing
-print('@ smoothing...')
+print('@ smoothing data...')
 workers = mp.Pool(processes=NCPUS)
 output = workers.map(smooth_entries,output)
 workers.close()
 
 # 3 - standardize C alpha coordinates
-print('@ standardize coordinates...')
+#print('@ standardize coordinates...')
 #workers = mp.Pool(processes=NCPUS)
 #output = workers.map(standardize_coords,output)
 #workers.close()
 
-print('@ detect geometrical helices...')
+print('@ cluster residues...')
 workers = mp.Pool(processes=NCPUS)
 output = workers.map(detect_helices,output)
 workers.close()
@@ -207,13 +179,14 @@ workers.close()
 
 # 4 - get labels
 if do_res_labeling == True:
+    print("@ labeling residues...")
     # ~~! SS label algorithm !~~~
+    print("    > loading canonical dataframes...")
     alpha_df = pck.load(open(CANONICAL_DIR+'alpha_can.p', 'rb'))
     pi_df = pck.load(open(CANONICAL_DIR+'pi_can.p', 'rb'))
     three_df = pck.load(open(CANONICAL_DIR+'three_can.p', 'rb'))
     pp2_df = pck.load(open(CANONICAL_DIR+'pp2_can.p', 'rb'))
 
-    print('@ labeling residues...')
     workers = mp.Pool(processes=NCPUS)
     output = workers.map(get_labels,output)
     workers.close()

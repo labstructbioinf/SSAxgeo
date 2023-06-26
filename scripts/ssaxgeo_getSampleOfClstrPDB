@@ -120,5 +120,5 @@ print("@ writing sampled clustered pdb csv...")
 sampled_clstr_pdb = lpdb.chains.iloc[selected_idxs]
 sampled_csv_path = f"{output_dir}/sampled_clust-{reddnc}.csv"
 sampled_clstr_pdb.to_csv(sampled_csv_path)
-
+print(f"  > saved as {output_dir}/sampled_clust-{reddnc}.csv")
 print(":: DONE ::")

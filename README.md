@@ -49,8 +49,9 @@ This process most likely will take a long time.
 Once the local pdb copy is in place, compute a clustered pdb with a given sequence redundancy.
 For instance, with the command bellow the user can obtain entries clustered by 30% of redundance and entry with at least 2 angstron resolutions.
 
+TODO: if dssp and xgeo folder are not there, create it
 ```{bash}
-getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
+ssaxgeo_getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
 ```
 
 ```
@@ -75,7 +76,7 @@ options:
 For each entry on the clustered pdb, we need to compute our differential geometry descriptors:
 
 ```{bash}
-computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/sampled_clust-30.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/myclstrdPDB_updated.csv
+ssaxgeo_computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/sampled_clust-30.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/sampled_clust-30_updated.csv
 ```
 
 ```
@@ -95,13 +96,25 @@ options:
   --ncpus NCPUS         Number of cpus to be used (default=1)
   --out_csv OUT_CSV     Description of out_csv
 ```
-### 3 - identify geometrical helices of protein structures
+### 4 - Clustering residues and generating "fragments" 
+----
 
+The next step is to normalize and smooth xgeo representation for each entry, clustering residues and obtain "fragments" (i. e., consecutive residues which belongs to the same cluster). Optionally, is possible to label all residues according to canonical regions (via `--do_res_labeling`)
 
+```
+ssaxgeo_clusterResidues /path/to/sampled_clust-30_updated.csv clust-30 -ncpus 8
+```
+
+To obtain residue labeling according to canonical regions a directory containing dataframes for canonical regions needs to be provided. Those dataframes needs to be named as: `alpha_can.p`, `pi_can.p`, `three_can.p` and `pp2_can.p`.
+
+```
+ssaxgeo_clusterResidues /path/to/sampled_clust-30_updated.csv clust-30 -ncpus 8 -do_
+```
 
 ### 4 - Select canonical regions
 ----
 To obtain a dataframe with all the descriptors and run the SS_assignment just run the _prepare_BCX_df.py_
+
 ```{bash}
 >$ python prepare_BCX_df.py /path/to/lPDB_metadata.csv bc-50 -ncpus 10
 ```
