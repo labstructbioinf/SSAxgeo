@@ -178,6 +178,9 @@ def write_sanitized_pdb(errors_found_lst, input_pdb, output_pdb, res_miss_ca_lst
     with open(output_pdb, 'w') as f:
         f.writelines(content)
 
+def run_dssp(pdb_flpth, dssp_flpth):
+    cmd = f"mkdssp --output-forma dssp {pdb_flpth} > {dssp_flpth}"
+    os.system(cmd)
 
 #input_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E.pdb"
 #output_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E_sntzd.pdb"
