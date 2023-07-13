@@ -740,6 +740,12 @@ class entry:
             dssp_data['res'] = dssp_data['res'].apply(intfy)
             # merge new data =)
             self.xdata_df = pd.merge(self.xdata_df, dssp_data, on='res')
+            self.xdata_df.drop(
+                ["phi_x", "psi_x"], axis=True, inplace=True)
+            self.xdata_df.rename(
+                    columns={"phi_y":"phi", "psi_y":"psi"},
+                    inplace=True
+                )
             # get pp2 assignment
             if dssp_pp2==True:
                 self.xdata_df['ss_pp2'] = self.xdata_df.apply(dssp_pp2_assgn,axis=1)
