@@ -11,6 +11,72 @@ import pickle as pck
 import argparse
 import os
 import pandas as pd
+import ssaxgeo.PDBfileToolBox as PDBfileToolBox
+import multiprocessing as mp
+
+# --- FUCNTIONS ---
+def compute_pdbx(kwargs):
+  # ---- custom values that worked before --------------
+  # These values were obtained from a smaller dataset
+  c_max = 2.0464588
+  c_min = 0.0
+  t_max = 0.1688680999999992
+  t_min = -0.3012673000000001
+  # ----------------------------------------------------
+  
+  try:
+    dir = "/".join(kwargs["f"].split("/")[:-1])+"/"
+    fl_nm = kwargs["f"].split("/")[-1].split(".")[0]
+    dssp_flpth = f"{dir}{fl_nm}.dssp"
+
+    entry = PDBx.entry(kwargs["f"])
+    
+    entry.xdata_df.to_csv(kwargs["xdata_flpath"])
+
+    if kwargs["run_dssp"]:
+      PDBfileToolBox.run_dssp(kwargs["f"],dssp_flpth)
+      try:
+        entry.load_dssp_data(dssp_flpth)
+      except(KeyError):
+        print(dssp_flpth)
+        print(stop)
+
+    entry.get_dist2canonical(alpha_df=kwargs["alpha_can"],
+                           pi_df=kwargs["pi_can"], 
+                           three_df=kwargs["three_can"],
+                           pp2_df=kwargs["pp2_can"])
+    entry.get_labels(dist_min=0.2, pp2_max=0.07)
+  
+    # sort file naming
+    # write xdata dataframe csv
+    
+    # write ssax only data dataframe
+    cols_to_ssax = ['res', 'D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
+    entry.xdata_df[cols_to_ssax].to_csv(kwargs["ssax_flpath"])
+    use_label = True
+
+    if kwargs["do_res_clustering"] == True:
+
+      if kwargs["do_not_use_labels"] == True:
+        use_label = False
+
+      entry.get_normalize_xdf(c_norm=True, k_min=c_min, k_max=c_max, t_min=t_min,
+                            t_max=t_max)
+      assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
+      entry.add_smoothed('curv_norm')
+      entry.add_smoothed('tor_norm')
+      entry.add_smoothed('wri')
+      
+      entry.detect_hlx(
+          show_plot=False, 
+          selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'],
+          label=use_label
+      )
+    return entry
+  except(IndexError):
+    print("W:"+kwargs["f"])
+
+# -----------------
 
 desc = '''
 This script run the Secondary Structure Assignment based on differential
@@ -18,14 +84,14 @@ geometry (xgeo) descriptors on a specified entry and save results as csv files.
 '''
 parser = argparse.ArgumentParser(description=desc)
 parser.add_argument('pdb_flpath', type=str,
-                    help='protein chain coordinate file path')
+  help='protein chain coordinate file path or a directory containing multuple pdb files')
 parser.add_argument('-xgeo_flpath', type=str, default=None,
-                    help='protein chain xgeo file path (computed by Flexgeo)')
+  help='protein chain xgeo file path (computed by Flexgeo)')
 script_dir = os.path.dirname(os.path.realpath(__file__))
 parser.add_argument('-can_dir', type=str, default=script_dir+'/../canonical/',
-                help='SSE canonical dataframes directory (default=script dir)')
+  help='SSE canonical dataframes directory (default=script dir)')
 parser.add_argument('-out_dir', type=str, default=os.getcwd(),
-                help='Output directory (default=working dir)')
+  help='Output directory (default=working dir)')
 parser.add_argument('-min_dist', type=float, default=0.2,
   help='''
   Minimum distance from canonical Pi/Alpha/3(10) to consider as a label
@@ -33,15 +99,28 @@ parser.add_argument('-min_dist', type=float, default=0.2,
   ''')
 parser.add_argument('-pp2_max', type=float, default=0.07,
   help='Maximum distance from canonical PP2 to consider as PP2 (default=0.07)')
-
 parser.add_argument('-prefix', type=str, default='',
   help='Prefix for ouput files (default='')')
+parser.add_argument('-ncpus', type=int, default=mp.cpu_count(),
+  help='number of cpus to use (default = all available) [only for a dir as input]')
+parser.add_argument('-gen_plots', action="store_true",
+  help="generate arrow plots (default=False)")
+
+parser.add_argument('-do_res_clustering', action="store_true",
+  help="clustering residues to identify helices (default=False)")
+
+parser.add_argument('-do_not_use_labels', action="store_true",
+  help="do res clustering without using labels from canonical (default=False)")
+
+parser.add_argument('-run_dssp', action="store_true",
+  help="generate dssp data (default=False)")
 
 args = parser.parse_args()
+ncpus = args.ncpus
 
 print('|---------------------------------------------------------------------|')
 print('                               SSAxgeo                                 ')
-print('                            version 1.0_dev                            ')
+print('                            version 0.5 (prototype)                            ')
 print('            developed by Laboratory of Structural Bioinformatics       ')
 print('|---------------------------------------------------------------------|')
 print(' [add short descriptiont]')
@@ -60,33 +139,44 @@ can_dir = args.can_dir
 print('| -can_dir    = ', can_dir)
 out_dir = args.out_dir
 print('| -out_dir    = ', out_dir )
-prefix = args.prefix
-if prefix == '':
-    prefix = '/'+pdb_flpath.split('/')[-1].split('.')[0]
-
-print('| -prefix =', prefix)
 print('|--- SSAx parameters ----|')
 min_dist = args.min_dist
 print('| -min_dist   =', min_dist)
 pp2_max = args.pp2_max
 print('| -pp2_max    =', pp2_max)
+do_res_clustering = args.do_res_clustering
+print('| -do_res_clustering    = ', do_res_clustering)
+do_not_use_labels = args.do_not_use_labels
+print('| -do_not_use_labels    = ', do_not_use_labels)
+run_dssp = args.run_dssp
+print('| -run_dssp             = ', run_dssp)
 print('|---------------------------------------------------------------------|')
 
-# Load entry data
-print('@ loading entry...')
-entry = PDBx.entry(pdb_flpath,xgeo_flpath=xgeo_flpath)
-print('  > nres          = ', entry.nres)
-print('  > is continuous = ', entry.cont)
+# proc input
+file_as_input = False
+dir_as_input = False
+if pdb_flpath.endswith(".pdb"):
+  # assert file exists
+  try:
+    assert(os.path.exists(pdb_flpath))
+    file_as_input = True
+  except(AssertionError):
+    print(f"ERROR: {pdb_flpath} does not exist")
+    exit(1)
 
-# plot arrows representation
-print('@ ploting arrows...')
-entry.plot_arrows(save_fig=True, myDIR=out_dir, show_plot=False, plot_prefix=prefix)
+if os.path.isdir(pdb_flpath):
+  # convert to absolute path
+  pdb_flpath = os.path.abspath(pdb_flpath+"/")
+  files_found = PDBfileToolBox.get_all_files_in_dir(pdb_flpath)
+  pdb_files_found = [f for f in files_found if f.endswith(".pdb")]
+  for each in pdb_files_found:
+    assert(os.path.exists(each))
+  try:
+    assert(len(pdb_files_found) > 0)
+    dir_as_input = True
+  except(AssertionError):
+    print(f"ERROR: No PDB file found at {pdb_flpath}")
 
-print('  >> ', out_dir+prefix+'wri_tor_Arrows.png')
-print('  >> ', out_dir+prefix+'curv_tor_Arrows.png')
-print('  >> ', out_dir+prefix+'wri_curv_Arrows.png')
-
-print('@ running SSAx...')
 # Load canonical dataframes
 print('  >> loading canonical SSE dataframes...')
 alpha_can = pck.load(open(can_dir+'/alpha_can.p','rb'))
@@ -94,30 +184,118 @@ pi_can = pck.load(open(can_dir+'/pi_can.p','rb'))
 three_can = pck.load(open(can_dir+'/three_can.p','rb'))
 pp2_can = pck.load(open(can_dir+'/pp2_can.p','rb'))
 
-print('  >> computing residues to canonical distances...')
-# get distances to canonical
-entry.get_dist2canonical(alpha_df=alpha_can, pi_df=pi_can, three_df=three_can,
-                         pp2_df=pp2_can)
-print('  >> seting residues labels...')
-# get labels
-entry.get_labels(dist_min=0.2, pp2_max=0.07)
-
-# write output files
-print('@ writing output files...')
-# sort file naming
-xdata_flnm = 'xdata_df.csv'
-ssax_flnm = 'ssax.csv'
+# set suffix
+xdata_sfx = 'xdata_df.csv'
+ssax_sfx = 'ssax.csv'
 
 
-xdata_flnm = prefix+'_'+xdata_flnm
-ssax_flnm = prefix+'_'+ssax_flnm
+
+if file_as_input == True:
+  # Load entry data
+  print('@ loading entry...')
+  entry = PDBx.entry(pdb_flpath,xgeo_flpath=xgeo_flpath)
+  print('  > nres          = ', entry.nres)
+  print('  > is continuous = ', entry.cont)
+  # get files prefix
+  prefix = pdb_flpath.split('/')[-1].split('.')[0]
+
+  # plot arrows representation
+  if args.gen_plot == True:
+    print('@ ploting arrows...')
+    entry.plot_arrows(save_fig=True, myDIR=out_dir, show_plot=False, plot_prefix=prefix)
+
+    print('  >> ', out_dir+prefix+'wri_tor_Arrows.png')
+    print('  >> ', out_dir+prefix+'curv_tor_Arrows.png')
+    print('  >> ', out_dir+prefix+'wri_curv_Arrows.png')
+
+  print('@ running SSAx...')
+  print('  >> computing residues to canonical distances...')
+  # get distances to canonical
+  entry.get_dist2canonical(alpha_df=alpha_can, pi_df=pi_can, three_df=three_can,
+                           pp2_df=pp2_can)
+  print('  >> seting residues labels...')
+
+  # get labels
+  entry.get_labels(dist_min=0.2, pp2_max=0.07)
+
+  # write output files
+  print('@ writing output files...')
+  # sort file naming
+  xdata_flnm = prefix+'_'+xdata_sfx
+  ssax_flnm = prefix+'_'+ssax_sfx
   
-# write xdata dataframe csv
-entry.xdata_df.to_csv(out_dir+xdata_flnm)
-print('  >> ', out_dir+xdata_flnm)
+  # write xdata dataframe csv
+  entry.xdata_df.to_csv(out_dir+xdata_flnm)
+  print('  >> ', out_dir+xdata_flnm)
 
-# write ssax only data dataframe
-cols_to_ssax = ['res', 'D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
-entry.xdata_df[cols_to_ssax].to_csv(out_dir+ssax_flnm)
-print('  >> ', out_dir+ssax_flnm)
+  # write ssax only data dataframe
+  cols_to_ssax = ['res', 'D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
+  entry.xdata_df[cols_to_ssax].to_csv(out_dir+ssax_flnm)
+  print('  >> ', out_dir+ssax_flnm)
+
+if dir_as_input == True:
+  kwargs_lst = []
+  
+  for f in pdb_files_found:
+    if f.endswith("_sntzd.pdb"):
+      continue
+
+    
+    # get file name prefix
+    prefix = f.split("/")[-1].split(".")[0]
+
+    # if no sanitized file exist, check if one needs to be created
+    #if os.path.exists(f"{pdb_flpath}/{prefix}_sntzd.pdb") == False:
+    
+    # validate pdb
+    errs_found_lst, missing_ca_res_lst = PDBfileToolBox.validate_pdb_file(f)
+    # if the pdb file has no ATOM or HETATOM, consider as missing
+    if "No ATOM or HETATM records present" in errs_found_lst:
+      print(f"WARNING: No ATOM or HETATM records present at {f}")
+      continue
+
+    if run_dssp == False:
+      # only usefull for mkdssp
+      if "No CRYST1 record is present" in errs_found_lst:
+        errs_found_lst.pop(errs_found_lst.index("No CRYST1 record is present"))
+      
+    # if problems were found, write a sanitized version of the input file
+    # and use it instead
+    if len(errs_found_lst) > 0 or len(missing_ca_res_lst) > 0:
+      # sanitize pdb and store as the file to be used
+      src_dir = pdb_flpath
+      sanitized_path = f"{src_dir}/{prefix}_sntzd.pdb"
+      PDBfileToolBox.write_sanitized_pdb(errs_found_lst, f, sanitized_path, missing_ca_res_lst)
+      f = sanitized_path
+
+    kwargs_lst.append(
+      {
+        "f":f, "xdata_flpath": f"{out_dir}/{prefix}_{xdata_sfx}",
+        "ssax_flpath": f"{out_dir}/{prefix}_{ssax_sfx}",
+        "alpha_can":alpha_can, "pi_can": pi_can,
+        "three_can": three_can, "pp2_can":pp2_can,
+        "do_res_clustering":do_res_clustering,
+        "do_not_use_labels":do_not_use_labels,
+        "run_dssp": run_dssp
+      }
+    )
+
+  pool = mp.Pool(ncpus)
+  entries = pool.map(compute_pdbx, kwargs_lst)
+  pool.close()
+  grp_name = "test"
+  grp = PDBx.group(grp_name)
+  grp.entries = [e for e in entries if (e is not None)]
+  print(f" >> {len(grp.entries)} total entries")
+
+  if do_res_clustering:
+    grp.load_grp_dfs(frag_df=True)
+  else:
+    grp.load_grp_dfs(frag_df=False)
+  
+  grp.grp_df.to_csv(f"{out_dir}/{grp.name}_grp.csv")
+  
+  if do_res_clustering:
+    grp.grp_frag_df.to_csv(f"{out_dir}/{grp.name}_grp_frags.csv", index=False)
+  
 print(':: DONE ::')
