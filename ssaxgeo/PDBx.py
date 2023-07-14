@@ -34,7 +34,8 @@ def intfy_res(row):
 def load_xgeo_df(xgeo_flpath):
     '''Load xgeo dataframe from flexgeo output file'''
     xgeo_df = pd.read_csv(xgeo_flpath, index_col=False)#, header=None)
-    xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
+    if "phi" in xgeo_df.columns:
+        xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
     #xgeo_df.columns=['conf_n', 'res', 'curv', 'tor', 'arc','wri',
     #                     'ca_x', 'ca_y', 'ca_z', 'seq']
 
@@ -125,7 +126,7 @@ def cluster_res_by_wfilter(xdata_df, wri_lim=0.1, r_dist=0.3, nr_dist=0.85,
     with input data.
     '''
     # get filtered dataframe
-    wri_col = xdata_df['wri']
+    wri_col = xdata_df['wri'].astype(float)
     round_df=xdata_df.loc[(abs(wri_col) >= wri_lim)]
     not_round_df = xdata_df.loc[(abs(wri_col) < wri_lim)]
 
@@ -240,7 +241,7 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
             # handle empty dssp data
             if "ss" not in hlx_df.columns:
                 empty_dssp = True
-                print(f"WARNING : NO DSSP DATA FOR {hlx_df['code'].iloc[0]}")
+                print(f"WARNING : NO DSSP DATA FOR {pdbid}")
 
             if empty_dssp == False:
                 dssp = hlx_df['ss'].values            
@@ -344,7 +345,11 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
             # Xgeo data
             # wri
             wri_col = hlx_df['wri']
+            #try:
             w_mean, w_median, w_std = get_mean_std_median_of(wri_col)
+            #except(TypeError):
+            #    print(f"EITAOH: {wri_col.mean()}")
+            #    print(stop)
             w_raw = wri_col.values
 
             # wri smoothed
@@ -741,6 +746,7 @@ class entry:
             # fix columns
             dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
             self.xdata_df = pd.read_csv(xgeo_flpath, names=dgo_cols)
+            self.xdata_df["wri"] = self.xdata_df["wri"].astype(float)
             self.xgeo_flpath = xgeo_flpath
             
     # ~~~ LOAD DATA METHODS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -948,7 +954,8 @@ class entry:
         # 1 - Input Processing
         try:
             assert(column_name in self.xdata_df.columns)
-            data = self.xdata_df[column_name].values
+            data = self.xdata_df[column_name].values.astype(float)
+
         except(AssertionError):
             raise ValueError("{} is not a columns of xdata".format(column_name))
 
@@ -1100,16 +1107,15 @@ class entry:
 
         xdata_df = self.xdata_df
         if label == False:
-            # cluster individual residues
+
             c_round_col, c_nround_col = cluster_res_by_wfilter(xdata_df,
                 wri_lim=w_lim, min_rsize=3, min_nrsize=3,r_dist=r_dist,
                 nr_dist=nr_dist, show_plot=show_plot,
                 selected_cols=selected_cols)
-
             # stick new columns
             xdata_df = pd.concat([xdata_df, c_round_col], axis=1)
             xdata_df = pd.concat([xdata_df, c_nround_col],axis=1)
-
+            xdata_df["wri"] = xdata_df["wri"].astype(float)
             if show_plot is True:
                 # plot cluster curv vs tor
                 def __plot_XY_clstrs(colx, coly, labelx, labely, r_min=5,
@@ -1145,9 +1151,12 @@ class entry:
         if label == True:
             err= "No 'label' column on dataframe."
             assert('label' in self.xdata_df.columns),err
-
+        #try:
         self.frag_df = mount_frags_df(xdata_df, len_lim=3, pdbid=self.pdbid,
-                                      chain=self.chain, label=label)
+                                          chain=self.chain, label=label)
+        #except(TypeError):
+        #    print(xdata_df["wri"].values)
+        #    print(self.xgeo_flpath)
         self.xdata_df = xdata_df
 
     def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df):
