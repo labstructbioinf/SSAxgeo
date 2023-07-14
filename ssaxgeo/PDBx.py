@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 #
 import ssaxgeo.MathToolBox as MathToolBox
+import ssaxgeo.PDBfileToolBox as PDBfileToolBox
 from scipy.cluster.hierarchy import fcluster
 # third party data
 import ssaxgeo.dssp as dssp
@@ -21,6 +22,8 @@ Here we define classes to deal with PDB entries chains xgeo data, as a single
 entry and as a group of entries.
 
 '''
+### GLOBAL VAR #################################################################
+XGEO_ENGINES = ["melodia", "diffgeo"]
 
 ### FUNCTIONS ##################################################################
 
@@ -62,9 +65,16 @@ def load_group_df(entries_lst, frag_df = False):
                 df = pdbx_i.xdata_df
             if frag_df == True:
                 df = pdbx_i.frag_df
-            df_list.append(df)
-            new_cols_list.append([[pdbx_i.pdbid, pdbx_i.chain]]*len(df))
-
+            try:
+                df_list.append(df)
+                new_cols_list.append([[pdbx_i.pdbid, pdbx_i.chain]]*len(df))
+            except(TypeError):
+                print(df)
+                print(pdbx_i.xdata_df)
+                print(pdbx_i.frag_df)
+                print(f"WARNING: skiping {[pdbx_i.pdbid, pdbx_i.chain]} due to no dataframe available")
+                continue
+        
         # stack individual dfs
         all_xdata = pd.concat(df_list, axis=0, sort=False)
         all_xdata = all_xdata.reset_index(drop=True)
@@ -691,30 +701,48 @@ class entry:
             return False
 
     # ~~~ COMPUTE DG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def computeDiffGeo(self, model_i=None):
+    def computeDiffGeo(self, model_i=None, engine="diffgeo"):
         '''
         compute curvature, torsion and writhing number and return a pandas dataframe
         '''
-        # compute geometry
-        dfi = mel.geometry_from_structure_file(self.coord_flpath)
+        try:
+            assert(engine in XGEO_ENGINES)
+        except(AssertionError):
+            print(f"ERROR: {engine} is not valid ({XGEO_ENGINES})")
+            exit(1)
 
-        # if model is provided, check if it is available
-        if model_i != None:
-            assert(model_i in dfi.model.unique())
+        if engine == "melodia":
+            # compute geometry
+            dfi = mel.geometry_from_structure_file(self.coord_flpath)
 
-        # if model note provided, choose first model
-        if model_i == None:
-            model_i = dfi.model.unique()[0]
+            # if model is provided, check if it is available
+            if model_i != None:
+                assert(model_i in dfi.model.unique())
+
+            # if model note provided, choose first model
+            if model_i == None:
+                model_i = dfi.model.unique()[0]
         
-        model = dfi['model'] == model_i
-        dfo = dfi[model].copy()
+            model = dfi['model'] == model_i
+            dfo = dfi[model].copy()
         
-        # store xdata as attribute
-        # NEED TO BS SURE IT IS CONSISTENT WITH PREVIOUS DF FORMAT!! (check load_xgeo_df)
-        dfo.rename(columns={'model':'conf_n', 'order':'res', 'curvature':'curv', 
-                            'torsion':'tor', 'arc_length':'arc','writhing':'wri'}, inplace=True)
-        self.xdata_df = dfo
+            # store xdata as attribute
+            # NEED TO BS SURE IT IS CONSISTENT WITH PREVIOUS DF FORMAT!! (check load_xgeo_df)
+            dfo.rename(columns={'model':'conf_n', 'order':'res', 'curvature':'curv', 
+                                'torsion':'tor', 'arc_length':'arc','writhing':'wri'}, inplace=True)
+            self.xdata_df = dfo
+        
+        if engine == "diffgeo":
 
+            in_path = self.coord_flpath.split('.')[0]
+            PDBfileToolBox.run_diffgeo(in_path)
+            xgeo_flpath = f"{in_path}.csv"
+            assert(os.path.exists(xgeo_flpath))
+            # fix columns
+            dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
+            self.xdata_df = pd.read_csv(xgeo_flpath, names=dgo_cols)
+            self.xgeo_flpath = xgeo_flpath
+            
     # ~~~ LOAD DATA METHODS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def load_dssp_data(self, dssp_flpath, dssp_pp2 = True):
         '''
@@ -740,12 +768,15 @@ class entry:
             dssp_data['res'] = dssp_data['res'].apply(intfy)
             # merge new data =)
             self.xdata_df = pd.merge(self.xdata_df, dssp_data, on='res')
-            self.xdata_df.drop(
-                ["phi_x", "psi_x"], axis=True, inplace=True)
-            self.xdata_df.rename(
-                    columns={"phi_y":"phi", "psi_y":"psi"},
-                    inplace=True
-                )
+            if "phi_x" in self.xdata_df.columns:
+                self.xdata_df.drop(
+                    ["phi_x", "psi_x"], axis=True, inplace=True
+                    )
+                
+                self.xdata_df.rename(
+                        columns={"phi_y":"phi", "psi_y":"psi"},
+                        inplace=True
+                    )
             # get pp2 assignment
             if dssp_pp2==True:
                 self.xdata_df['ss_pp2'] = self.xdata_df.apply(dssp_pp2_assgn,axis=1)

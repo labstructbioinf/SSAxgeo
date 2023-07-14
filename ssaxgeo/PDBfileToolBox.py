@@ -1,5 +1,7 @@
 import os
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
 def get_all_files_in_dir(directory):
     file_paths = []
     for root, dirs, files in os.walk(directory):
@@ -179,9 +181,14 @@ def write_sanitized_pdb(errors_found_lst, input_pdb, output_pdb, res_miss_ca_lst
         f.writelines(content)
 
 def run_dssp(pdb_flpth, dssp_flpth):
-    cmd = f"mkdssp --output-forma dssp {pdb_flpth} > {dssp_flpth}"
+    cmd = f"mkdssp --output-format dssp {pdb_flpth} > {dssp_flpth}"
     os.system(cmd)
 
+def run_diffgeo(in_path, diffgeo_path=SCRIPT_DIR+'/../diffgeo/diffgeo',ncpus=1):
+    cmd = f"{diffgeo_path} --id {in_path} --cores {ncpus}"
+    #print(cmd)
+    os.system(cmd)
+            
 #input_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E.pdb"
 #output_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E_sntzd.pdb"
 
