@@ -35,11 +35,10 @@ def compute_pdbx(kwargs):
 
     if kwargs["run_dssp"]:
       PDBfileToolBox.run_dssp(kwargs["f"],dssp_flpth)
-      try:
-        entry.load_dssp_data(dssp_flpth)
-      except(KeyError):
-        print(dssp_flpth)
-        print(stop)
+      #try:
+      entry.load_dssp_data(dssp_flpth)
+      #except(KeyError):
+      #print(dssp_flpth)
 
     entry.get_dist2canonical(alpha_df=kwargs["alpha_can"],
                            pi_df=kwargs["pi_can"], 
@@ -138,6 +137,8 @@ print('|---- Directories ----|')
 can_dir = args.can_dir
 print('| -can_dir    = ', can_dir)
 out_dir = args.out_dir
+if out_dir.endswith("/") == False:
+  out_dir = out_dir+"/"
 print('| -out_dir    = ', out_dir )
 print('|--- SSAx parameters ----|')
 min_dist = args.min_dist
@@ -160,6 +161,7 @@ if pdb_flpath.endswith(".pdb"):
   try:
     assert(os.path.exists(pdb_flpath))
     file_as_input = True
+    pdb_flpath = os.path.abspath(pdb_flpath)
   except(AssertionError):
     print(f"ERROR: {pdb_flpath} does not exist")
     exit(1)
@@ -167,6 +169,7 @@ if pdb_flpath.endswith(".pdb"):
 if os.path.isdir(pdb_flpath):
   # convert to absolute path
   pdb_flpath = os.path.abspath(pdb_flpath+"/")
+  print(f"@ checking for pdb files at {pdb_flpath}")
   files_found = PDBfileToolBox.get_all_files_in_dir(pdb_flpath)
   pdb_files_found = [f for f in files_found if f.endswith(".pdb")]
   for each in pdb_files_found:
@@ -174,8 +177,10 @@ if os.path.isdir(pdb_flpath):
   try:
     assert(len(pdb_files_found) > 0)
     dir_as_input = True
+    print(f"   > {len(pdb_files_found)} pdb files found")
   except(AssertionError):
     print(f"ERROR: No PDB file found at {pdb_flpath}")
+    exit(1)
 
 # Load canonical dataframes
 print('  >> loading canonical SSE dataframes...')
@@ -198,9 +203,40 @@ if file_as_input == True:
   print('  > is continuous = ', entry.cont)
   # get files prefix
   prefix = pdb_flpath.split('/')[-1].split('.')[0]
+  
+  # validate pdb
+  errs_found_lst, missing_ca_res_lst = PDBfileToolBox.validate_pdb_file(pdb_flpath)
+  # if the pdb file has no ATOM or HETATOM, consider as missing
+  if "No ATOM or HETATM records present" in errs_found_lst:
+    print(f"WARNING: No ATOM or HETATM records present at {pdb_flpath}")
+    exit(1)
 
+  if run_dssp == False:
+    # only usefull for mkdssp
+    if "No CRYST1 record is present" in errs_found_lst:
+      errs_found_lst.pop(errs_found_lst.index("No CRYST1 record is present"))
+      
+  # if problems were found, write a sanitized version of the input file
+  # and use it instead
+  if len(errs_found_lst) > 0 or len(missing_ca_res_lst) > 0:
+    # sanitize pdb and store as the file to be used
+    src_dir = pdb_flpath
+    sanitized_path = f"{out_dir}/{prefix}_sntzd.pdb"
+    PDBfileToolBox.write_sanitized_pdb(errs_found_lst, pdb_flpath, sanitized_path, missing_ca_res_lst)
+    pdb_flpath = sanitized_path
+
+
+  if run_dssp:
+    dssp_flpath = out_dir+prefix+".dssp"
+    PDBfileToolBox.run_dssp(pdb_flpath, dssp_flpath)
+    #try:
+    entry.load_dssp_data(dssp_flpath, dssp_pp2=True)
+    #except(KeyError):
+    #  print(dssp_flpath)
+
+  
   # plot arrows representation
-  if args.gen_plot == True:
+  if args.gen_plots == True:
     print('@ ploting arrows...')
     entry.plot_arrows(save_fig=True, myDIR=out_dir, show_plot=False, plot_prefix=prefix)
 
@@ -234,12 +270,14 @@ if file_as_input == True:
   print('  >> ', out_dir+ssax_flnm)
 
 if dir_as_input == True:
+  print("@ validating pdbs")
   kwargs_lst = []
-  
-  for f in pdb_files_found:
+  total = len(pdb_files_found)
+  for i, f in enumerate(pdb_files_found):
+
     if f.endswith("_sntzd.pdb"):
       continue
-
+    print(f"  > {i+1}/{total}", end="\r")
     
     # get file name prefix
     prefix = f.split("/")[-1].split(".")[0]
@@ -267,7 +305,7 @@ if dir_as_input == True:
       sanitized_path = f"{src_dir}/{prefix}_sntzd.pdb"
       PDBfileToolBox.write_sanitized_pdb(errs_found_lst, f, sanitized_path, missing_ca_res_lst)
       f = sanitized_path
-
+      print(f"   :: {f}")
     kwargs_lst.append(
       {
         "f":f, "xdata_flpath": f"{out_dir}/{prefix}_{xdata_sfx}",
@@ -281,6 +319,7 @@ if dir_as_input == True:
     )
 
   pool = mp.Pool(ncpus)
+  print(f"@ computing xgeo data...")
   entries = pool.map(compute_pdbx, kwargs_lst)
   pool.close()
   grp_name = "test"
