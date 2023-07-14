@@ -7,18 +7,29 @@ From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
 %post
 apt-get update -qq -y
 
-apt install -y libcifpp-dev dssp
+apt install -y libcifpp-dev dssp dub curl
 
 apt install -y rsync wget python3 python3-pip git nano cmake
 
-cd /opt/
+#cd /opt/
 
 
 mkdir /app/
 cd /app/
 
 # install dependencies
-pip3 install localpdb pandas nglview seaborn scipy scikit-learn
+pip3 install jupyterlab
+pip3 install localpdb pandas nglview seaborn scipy scikit-learn hdbscan  numpy matplotlib
+
+# install dmd
+wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
+apt-get update --allow-insecure-repositories
+apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
+apt-get update
+apt-get install -y dmd-compiler
+
+#curl -fsS https://dlang.org/install.sh | bash -s dmd
+#bash "source ~/dlang/dmd-2.104.1/activate"
 
 # install Melodia
 git clone --recursive https://github.com/rwmontalvao/Melodia.git
@@ -31,6 +42,11 @@ python3 setup.py install
 git clone https://github.com/labstructbioinf/SSAxgeo.git
 cd SSAxgeo/
 pip3 install -e ./
+# compile diff
+cd /app/SSAxgeo/diffgeo/
+dub build --build=release --compiler=dmd
+ 
+###
 
 %runscript
 exec /bin/bash "$@"
