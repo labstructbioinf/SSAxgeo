@@ -1,0 +1,3 @@
+[submodule "diffgeo"]
+	path = diffgeo
+	url = https://github.com/rwmontalvao/diffgeo.git
