@@ -204,8 +204,13 @@ pck.dump(grp, open(save_dir+'/grp_state_'+bc_group+'.p', 'wb'))
 print(' --> at ', save_dir+'/grp_state_'+bc_group+'.p')
 # save raw data
 print('@ saving residues dataframe...')
-pck.dump(grp.grp_df, open(save_dir+'/grp_res_df_'+bc_group+'.p', 'wb'))
-print(' --> at ', save_dir+'/grp_res_df_'+bc_group+'.p')
-pck.dump(grp.grp_frag_df, open(save_dir+'/grp_frag_df_'+bc_group+'.p', 'wb'))
-print(' --> at', save_dir+'/grp_frag_df_'+bc_group+'.p')
+grp.grp_df.to_csv(save_dir+'/grp_res_df_'+bc_group+'.csv', index=False)
+#pck.dump(grp.grp_df, open(save_dir+'/grp_res_df_'+bc_group+'.p', 'wb'))
+print(' --> at ', save_dir+'/grp_res_df_'+bc_group+'.csv')
+
+grp_frag_df = grp.grp_frag_df.drop(columns=[0,1])
+grp_frag_df.to_csv(save_dir+'/grp_frag_df_'+bc_group+'.csv', index=False)
+
+#pck.dump(grp.grp_frag_df, open(save_dir+'/grp_frag_df_'+bc_group+'.p', 'wb'))
+print(' --> at', save_dir+'/grp_frag_df_'+bc_group+'.csv')
 print(':: DONE ::')
