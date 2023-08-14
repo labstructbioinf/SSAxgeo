@@ -4,15 +4,13 @@ From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
 
 %files
    ../SSAxgeo/ /opt/
+
 %post
 apt-get update -qq -y
 
 apt install -y libcifpp-dev dssp dub curl
 
 apt install -y rsync wget python3 python3-pip git nano cmake
-
-#cd /opt/
-
 
 mkdir /app/
 cd /app/
@@ -28,20 +26,17 @@ apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
 apt-get update
 apt-get install -y dmd-compiler
 
-#curl -fsS https://dlang.org/install.sh | bash -s dmd
-#bash "source ~/dlang/dmd-2.104.1/activate"
-
 # install Melodia
 git clone --recursive https://github.com/rwmontalvao/Melodia.git
 cd Melodia/
 python3 setup.py install
 
 #install SSAxgeo
-#mv /opt/SSAxgeo /app/
-#cd /app/SSAxgeo
-git clone https://github.com/labstructbioinf/SSAxgeo.git
-cd SSAxgeo/
+#git clone --recurse-submodules https://github.com/labstructbioinf/SSAxgeo.git
+mv /opt/SSAxgeo /app/
+cd /app/SSAxgeo/
 pip3 install -e ./
+
 # compile diff
 cd /app/SSAxgeo/diffgeo/
 dub build --build=release --compiler=dmd
