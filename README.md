@@ -18,8 +18,6 @@ The recomended way to run SSAxgeo is using the the container provided on this re
 sudo singularity build ssaxgeo.sif SingularityFile
 ```
 
-**TODO**: Make diffgeo repo public 
-
 ### How to run?
 
 on the container
