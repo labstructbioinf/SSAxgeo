@@ -103,29 +103,43 @@ class DSSPData:
           self.zca.append(    line[129:136].strip() )
 
   def getDSSP_data(self):
+    def return_validint(val):
+        try:
+              return int(val)
+        except(ValueError):
+              return 0
+
+    def return_validfloat(val):
+        try:
+            return float(val)
+        except(ValueError):
+            return 0
+    
+          
+      
       # 1 - Get only SS assignment, original PDB resnum and AA seq
-      self.data = []
-      for i, each in enumerate(self.struct):
+    self.data = []
+    for i, each in enumerate(self.struct):
           ss = each[0:3].replace(' ', '')
           #h_nho1
           h_nho1_list =  self.h_nho1[i].split(',')
-          h_nho1_A = int(h_nho1_list[0])
-          h_nho1_en = float(h_nho1_list[1])
+          h_nho1_A = return_validint(h_nho1_list[0])
+          h_nho1_en = return_validfloat(h_nho1_list[1])
 
           #h_nho2
           h_nho2_list =  self.h_nho2[i].split(',')
-          h_nho2_A = int(h_nho2_list[0])
-          h_nho2_en = float(h_nho2_list[1])
+          h_nho2_A = return_validint(h_nho2_list[0])
+          h_nho2_en = return_validfloat(h_nho2_list[1])
 
           #h_ohn1
           h_ohn1_list =  self.h_ohn1[i].split(',')
-          h_ohn1_A = int(h_ohn1_list[0])
-          h_ohn1_en = float(h_ohn1_list[1])
+          h_ohn1_A = return_validint(h_ohn1_list[0])
+          h_ohn1_en = return_validfloat(h_ohn1_list[1])
 
           #h_ohn2
           h_ohn2_list =  self.h_ohn2[i].split(',')
-          h_ohn2_A = int(h_ohn2_list[0])
-          h_ohn2_en = float(h_ohn2_list[1])
+          h_ohn2_A = return_validint(h_ohn2_list[0])
+          h_ohn2_en = return_validfloat(h_ohn2_list[1])
 
           self.data.append([self.resnum[i], self.aa[i], ss,
                             h_nho1_A, h_nho1_en,
@@ -133,18 +147,18 @@ class DSSPData:
                             h_ohn1_A, h_ohn1_en,
                             h_ohn2_A, h_ohn2_en,
                             self.phi[i], self.psi[i]])
-      cols_nms = ['resnum', 'aa', 'ss',
+    cols_nms = ['resnum', 'aa', 'ss',
                 'h_nho1_A','h_nho1_en',
                 'h_nho2_A','h_nho2_en',
                 'h_ohn1_A','h_ohn1_en',
                 'h_ohn2_A','h_ohn2_en',
                 'phi', 'psi']
-      Data = pd.DataFrame(self.data, columns=cols_nms)
-      #if len(Data) > 0:
-      #  Data.columns = 
-      self.data = Data.drop_duplicates('resnum')
-      #self.data = Data
-      return self.data
+    Data = pd.DataFrame(self.data, columns=cols_nms)
+    #if len(Data) > 0:
+    #  Data.columns = 
+    self.data = Data.drop_duplicates('resnum')
+    #self.data = Data
+    return self.data
 
 
 if __name__ == "__name__":
