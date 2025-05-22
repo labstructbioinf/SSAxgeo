@@ -50,7 +50,7 @@ def compute_pdbx(kwargs):
     # write xdata dataframe csv
     
     # write ssax only data dataframe
-    cols_to_ssax = ['res', 'D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
+    cols_to_ssax = ['res', 'D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
     entry.xdata_df[cols_to_ssax].to_csv(kwargs["ssax_flpath"])
     use_label = True
 
@@ -184,10 +184,12 @@ if os.path.isdir(pdb_flpath):
 
 # Load canonical dataframes
 print('  >> loading canonical SSE dataframes...')
-alpha_can = pck.load(open(can_dir+'/alpha_can.p','rb'))
-pi_can = pck.load(open(can_dir+'/pi_can.p','rb'))
-three_can = pck.load(open(can_dir+'/three_can.p','rb'))
-pp2_can = pck.load(open(can_dir+'/pp2_can.p','rb'))
+alpha_can = pd.read_csv(can_dir+'/alpha_can.csv')
+pi_can = pd.read_csv(can_dir+'/pi_can.csv')
+three_can = pd.read_csv(can_dir+'/three_can.csv')
+pp2_can = pd.read_csv(can_dir+'/pp2_can.csv')
+lalpha_can = pd.read_csv(can_dir+'/lalpha_can.csv')
+lthree_can = pd.read_csv(can_dir+'/lthree_can.csv')
 
 # set suffix
 xdata_sfx = 'xdata_df.csv'
@@ -248,11 +250,11 @@ if file_as_input == True:
   print('  >> computing residues to canonical distances...')
   # get distances to canonical
   entry.get_dist2canonical(alpha_df=alpha_can, pi_df=pi_can, three_df=three_can,
-                           pp2_df=pp2_can)
+                           pp2_df=pp2_can, lalpha_df=lalpha_can,lthree_df=lthree_can)
   print('  >> seting residues labels...')
 
   # get labels
-  entry.get_labels(dist_min=0.2, pp2_max=0.07)
+  entry.get_labels(dist_min=0.2, pp2_max=0.07, left_hand=True)
 
   # write output files
   print('@ writing output files...')
@@ -265,7 +267,7 @@ if file_as_input == True:
   print('  >> ', out_dir+xdata_flnm)
 
   # write ssax only data dataframe
-  cols_to_ssax = ['res', 'D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
+  cols_to_ssax = ['res', 'D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)','label']
   entry.xdata_df[cols_to_ssax].to_csv(out_dir+ssax_flnm)
   print('  >> ', out_dir+ssax_flnm)
 

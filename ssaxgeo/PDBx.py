@@ -33,7 +33,28 @@ def intfy_res(row):
 
 def load_xgeo_df(xgeo_flpath):
     '''Load xgeo dataframe from flexgeo output file'''
-    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False)#, header=None)
+    dtypes = {
+        "label": "category",
+        "ID": "category",
+        "res": np.int32,
+        "atom": "category",
+        "res_name": "category",
+        "curv": np.float32,
+        "tor": np.float32,
+        "wri": np.float32,
+        "arc": np.float32,
+        "D(Alpha)": np.float32,
+        "D(Pi)": np.float32,
+        "D(3(10))": np.float32,
+        "D(PP2)": np.float32,
+        "conf": np.int16,
+        "aa_idx": np.int32
+    }
+
+    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False, dtype=dtypes)#, header=None)
+    xgeo_df.drop(["Unnamed: 0"], inplace=True, axis=1)
+    xgeo_df.drop(["res_name"], inplace=True, axis=1)
+
     if "phi" in xgeo_df.columns:
         xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
     #xgeo_df.columns=['conf_n', 'res', 'curv', 'tor', 'arc','wri',
@@ -1159,7 +1180,7 @@ class entry:
         #    print(self.xgeo_flpath)
         self.xdata_df = xdata_df
 
-    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df):
+    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df, lalpha_df=None, lthree_df=None):
         ''' '''
         # for pandas apply
         def get_alphad(row):
@@ -1186,16 +1207,38 @@ class entry:
         def get_pp2d(row):
             '''Compute distance for pp2 set'''
             p = row[['curv', 'tor', 'wri']].values
-            d_pPP2_min = MathToolBox.get_d2_pC_min(p, pp2_df[['c_mean', 't_mean', 'w_mean']].values)
+            C = pp2_df[['c_mean', 't_mean', 'w_mean']].values
+            d_pPP2_min = MathToolBox.get_d2_pC_min(p, C)
             return d_pPP2_min
 
+        def get_lalphad(row):
+            '''Compute distance for lalpha set'''
+            p = row[['curv', 'tor', 'wri']].values
+            C = lalpha_df[['c_mean', 't_mean', 'w_mean']].values
+            d_plA_min = MathToolBox.get_d2_pC_min(p, C)
+            return d_plA_min
+        
+        def get_lthree(row):
+            '''Compute distance for lthree set'''
+            p = row[['curv', 'tor', 'wri']].values
+            C = lthree_df[['c_mean', 't_mean', 'w_mean']].values
+            d_pl310_min = MathToolBox.get_d2_pC_min(p, C)
+            return d_pl310_min
+
         # ----------------------- #
-        self.xdata_df['D(Alfa)'] = self.xdata_df.apply(get_alphad, axis=1)
+        self.xdata_df['D(Alpha)'] = self.xdata_df.apply(get_alphad, axis=1)
         self.xdata_df['D(Pi)'] = self.xdata_df.apply(get_pid, axis=1)
         self.xdata_df['D(3(10))'] = self.xdata_df.apply(get_310d, axis=1)
         self.xdata_df['D(PP2)'] = self.xdata_df.apply(get_pp2d, axis=1)
 
-    def get_labels(self, dist_min=0.2, pp2_max = 0.07):
+        # add left alpha and 3(10) distances if provided
+        if lalpha_df is not None:
+            self.xdata_df['D(lalpha)'] = self.xdata_df.apply(get_lalphad, axis=1)
+        if lthree_df is not None:
+            self.xdata_df['D(l3(10))'] = self.xdata_df.apply(get_lthree, axis=1)
+
+
+    def get_labels(self, dist_min=0.2, pp2_max = 0.07, left_hand=True):
         '''
         Get labels for residues based on distances to canonical groups.
         For alfa, pi and and 3(10), consider only residues with d<0.2, and
@@ -1210,18 +1253,26 @@ class entry:
         pp2_max = <float>, max distance away from PP2 to still be assigned as such
         '''
         # get distances
-        dist_arr = self.xdata_df[['D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)']].values
+        dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)']].values
+        labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2']
+        
+        if left_hand == True:
+            # get left hand distances
+            dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 
+                                      'D(PP2)','D(lalpha)', 'D(l3(10))']].values
+            labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2', 'lAlpha', 'l3(10)']
 
         # check distances bellow threshold
-        row_is, col_is = np.where(dist_arr <dist_min)
-        labels_arr = ['Alfa', 'Pi', '3(10)', 'PP2']
+        row_is, col_is = np.where(dist_arr < dist_min)
         valid_is = np.unique(row_is)
         label_lst = []
 
+        # check if there are any valid distances
         for i in range(0, len(dist_arr)):
             if i not in valid_is:
                 label_lst.append('1-p')
                 continue
+            # if valid, check which one is the closest
             if i in valid_is:
                 dist_min = dist_arr[i].min()
                 l_min_i = np.where(dist_arr[i] == dist_min)[0][0]
@@ -1342,7 +1393,7 @@ class group:
         # sanity check
         assert(len(self.entries) != 0), 'No entries available'
         if reload == False:
-            assert(self.grp_df == None), 'group dataframe already loaded'
+            assert(type(self.grp_df) == type(None)), 'group dataframe already loaded'
         if frag_df == True:
             f_msg = 'fragments group dataframe already loaded'
             assert(self.grp_frag_df == None), f_msg
