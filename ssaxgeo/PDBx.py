@@ -1159,7 +1159,7 @@ class entry:
         #    print(self.xgeo_flpath)
         self.xdata_df = xdata_df
 
-    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df):
+    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df, lalpha_df=None, lthree_df=None):
         ''' '''
         # for pandas apply
         def get_alphad(row):
@@ -1186,16 +1186,38 @@ class entry:
         def get_pp2d(row):
             '''Compute distance for pp2 set'''
             p = row[['curv', 'tor', 'wri']].values
-            d_pPP2_min = MathToolBox.get_d2_pC_min(p, pp2_df[['c_mean', 't_mean', 'w_mean']].values)
+            C = pp2_df[['c_mean', 't_mean', 'w_mean']].values
+            d_pPP2_min = MathToolBox.get_d2_pC_min(p, C)
             return d_pPP2_min
 
+        def get_lalphad(row):
+            '''Compute distance for lalpha set'''
+            p = row[['curv', 'tor', 'wri']].values
+            C = lalpha_df[['c_mean', 't_mean', 'w_mean']].values
+            d_plA_min = MathToolBox.get_d2_pC_min(p, C)
+            return d_plA_min
+        
+        def get_lthree(row):
+            '''Compute distance for lthree set'''
+            p = row[['curv', 'tor', 'wri']].values
+            C = lthree_df[['c_mean', 't_mean', 'w_mean']].values
+            d_pl310_min = MathToolBox.get_d2_pC_min(p, C)
+            return d_pl310_min
+
         # ----------------------- #
-        self.xdata_df['D(Alfa)'] = self.xdata_df.apply(get_alphad, axis=1)
+        self.xdata_df['D(Alpha)'] = self.xdata_df.apply(get_alphad, axis=1)
         self.xdata_df['D(Pi)'] = self.xdata_df.apply(get_pid, axis=1)
         self.xdata_df['D(3(10))'] = self.xdata_df.apply(get_310d, axis=1)
         self.xdata_df['D(PP2)'] = self.xdata_df.apply(get_pp2d, axis=1)
 
-    def get_labels(self, dist_min=0.2, pp2_max = 0.07):
+        # add left alpha and 3(10) distances if provided
+        if lalpha_df is not None:
+            self.xdata_df['D(lalpha)'] = self.xdata_df.apply(get_lalphad, axis=1)
+        if lthree_df is not None:
+            self.xdata_df['D(l3(10))'] = self.xdata_df.apply(get_lthree, axis=1)
+
+
+    def get_labels(self, dist_min=0.2, pp2_max = 0.07, left_hand=True):
         '''
         Get labels for residues based on distances to canonical groups.
         For alfa, pi and and 3(10), consider only residues with d<0.2, and
@@ -1210,11 +1232,17 @@ class entry:
         pp2_max = <float>, max distance away from PP2 to still be assigned as such
         '''
         # get distances
-        dist_arr = self.xdata_df[['D(Alfa)', 'D(Pi)', 'D(3(10))', 'D(PP2)']].values
+        dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)']].values
+        labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2']
+        
+        if left_hand == True:
+            # get left hand distances
+            dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 
+                                      'D(PP2)','D(lalpha)', 'D(l3(10))']].values
+            labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2', 'lAlpha', 'l3(10)']
 
         # check distances bellow threshold
-        row_is, col_is = np.where(dist_arr <dist_min)
-        labels_arr = ['Alfa', 'Pi', '3(10)', 'PP2']
+        row_is, col_is = np.where(dist_arr < dist_min)
         valid_is = np.unique(row_is)
         label_lst = []
 
