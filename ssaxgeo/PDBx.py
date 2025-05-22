@@ -33,7 +33,28 @@ def intfy_res(row):
 
 def load_xgeo_df(xgeo_flpath):
     '''Load xgeo dataframe from flexgeo output file'''
-    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False)#, header=None)
+    dtypes = {
+        "label": "category",
+        "ID": "category",
+        "res": np.int32,
+        "atom": "category",
+        "res_name": "category",
+        "curv": np.float32,
+        "tor": np.float32,
+        "wri": np.float32,
+        "arc": np.float32,
+        "D(Alpha)": np.float32,
+        "D(Pi)": np.float32,
+        "D(3(10))": np.float32,
+        "D(PP2)": np.float32,
+        "conf": np.int16,
+        "aa_idx": np.int32
+    }
+
+    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False, dtype=dtypes)#, header=None)
+    xgeo_df.drop(["Unnamed: 0"], inplace=True, axis=1)
+    xgeo_df.drop(["res_name"], inplace=True, axis=1)
+
     if "phi" in xgeo_df.columns:
         xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
     #xgeo_df.columns=['conf_n', 'res', 'curv', 'tor', 'arc','wri',
@@ -1246,10 +1267,12 @@ class entry:
         valid_is = np.unique(row_is)
         label_lst = []
 
+        # check if there are any valid distances
         for i in range(0, len(dist_arr)):
             if i not in valid_is:
                 label_lst.append('1-p')
                 continue
+            # if valid, check which one is the closest
             if i in valid_is:
                 dist_min = dist_arr[i].min()
                 l_min_i = np.where(dist_arr[i] == dist_min)[0][0]
@@ -1370,7 +1393,7 @@ class group:
         # sanity check
         assert(len(self.entries) != 0), 'No entries available'
         if reload == False:
-            assert(self.grp_df == None), 'group dataframe already loaded'
+            assert(type(self.grp_df) == type(None)), 'group dataframe already loaded'
         if frag_df == True:
             f_msg = 'fragments group dataframe already loaded'
             assert(self.grp_frag_df == None), f_msg
