@@ -101,7 +101,7 @@ def cluster_grp_frags(frag_df, max_d=1.0, show_plot=False,
     else:
             return final_df
 
-def get_core_labels(df, Pc_LIM):
+def get_core_labels(df, Pc_LIM=0.60):
     '''
     Check if a residue belongs to the 'core' of the cluster.
     The core points in a cluster are consider each an every point which the
