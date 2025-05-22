@@ -178,7 +178,6 @@ parser.add_argument('-plot_debug_data', action='store_true', default=False,
   help='''generate plots for intermediate steps for debuging (default=False)''')
 
 args = parser.parse_args()
-parser.print_help()
 
 ################### INPUT ######################################################
 # general
@@ -222,8 +221,7 @@ w_min_cond = grp_frag_df['w_mean']>-0.3
 
 grp_fdf_1 = grp_frag_df.loc[t_max_cond & t_min_cond & w_max_cond & w_min_cond]
 print('  :: ', len(grp_fdf_1), ' fragments remaining')
-
-
+grp_fdf_1.to_csv(save_dir+"/filtered_frags_1.csv")
 # 2.1.2 - Remove fragments with higher standard deviation
 #   The idea is to keep only the most 'helical', we can filter by c_std and
 # t_std
@@ -232,6 +230,8 @@ c_std_cond = grp_fdf_1['c_std'] <= 0.07
 t_std_cond = grp_fdf_1['t_std'] <= 0.01
 grp_fdf_2 = grp_fdf_1.loc[c_std_cond & t_std_cond]
 print('  :: ', len(grp_fdf_2), ' fragments remaining')
+grp_fdf_2.to_csv(save_dir+"/filtered_frags_2.csv")
+
 
 # Generate canonical regions
 # 3 - get PP2 canonical
@@ -283,14 +283,15 @@ soft_clusters = hdbscan.all_points_membership_vectors(clusterer)
 grp_df_wgrtr['membership_vec'] = tuple(soft_clusters)
 
 # 4.3) Determinate which points belongs to the core of the clusters
-print('  > selecting data points belonging to clusters core...')
+print(f'  > selecting data points belonging to clusters core (Pc_lim = {Pc_LIM})...')
 grp_df_wgrtr['is_at_core'] = get_core_labels(grp_df_wgrtr, Pc_LIM=Pc_LIM)
-#print(grp_df_wgrtr[['membership_vec','is_at_core']])
+print(grp_df_wgrtr[['membership_vec','is_at_core']])
 core_df = grp_df_wgrtr.loc[grp_df_wgrtr['is_at_core']==True]
 print('  :: ', len(core_df), 'total fragments selected' )
-#print(np.unique(core_df['grp_frag_clusters'], return_counts=True))
-
+print(np.unique(core_df['grp_frag_clusters'], return_counts=True))
+grp_df_wgrtr.to_csv(save_dir+"/grp_df_wgrtr.csv")
 print('   > saving core dataframes at ', save_dir,'...')
+
 alpha_can = core_df.loc[core_df['grp_frag_clusters']==alpha_cluster_n]
 pi_can = core_df.loc[core_df['grp_frag_clusters']==pi_cluster_n]
 three_can = core_df.loc[core_df['grp_frag_clusters']==three_cluster_n]
