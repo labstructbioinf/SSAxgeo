@@ -114,28 +114,3 @@ ssaxgeo_clusterResidues /path/to/sampled_clust-30_updated.csv clust-30 -ncpus 8 
 Once a csv with the fragments is obtained, canonical regions can be idenfied by filtering fragments for geometrical helices, and clustering those fragment based on density. A jupyter notebook to generate the canonical sets is provided at `notebooks/SetCanonicalRegions.ipynb`
 
 ----
-
-### Algorithm description
-
----
-## TODO: (ver 1.0)
-
-- [x] bring diffgeo to be part of ssaxgeo
-- [x] migrate code for canonical regions detection to rely on localpdb
-- [x] add/update and adapt scripts to reproduce paper results more easily (via CLI)
-- [ ] adapt old code scripts to rely on new structure 
-  - [x] ssaxgeo
-  - [x] computePDBxgeo
-  - [x] getSampleOfClstrPDB
-  - [x] prepare_BCX_df
-  - [x] getCanonicalClusters
-    - [x] convert getCanonical to a notebook
-- [x] improve sanitize pdb function to comply with melodia
-- [ ] cosmetics changes
-- [ ] update documentation
-- [ ] test end-to-end
-
-## TODO: (ver 1.1)
-- [ ] add citation
-- [ ] add pymol viz support
-- [ ] add xgeo Dlang code suport
