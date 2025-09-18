@@ -13,7 +13,7 @@ from scipy.cluster.hierarchy import fcluster
 import ssaxgeo.dssp as dssp
 
 # diff geo
-import melodia as mel
+#import melodia as mel
 
 '''
         >>>> PDBx <<<<

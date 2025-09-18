@@ -10,7 +10,7 @@ apt-get update -qq -y
 
 apt install -y libcifpp-dev dssp dub curl
 
-apt install -y rsync wget python3 python3-pip git nano cmake
+apt install -y rsync wget python3 python3-pip git nano cmake gdc
 
 mkdir /app/
 cd /app/
@@ -20,11 +20,11 @@ pip3 install jupyterlab
 pip3 install localpdb pandas nglview seaborn scipy scikit-learn hdbscan  numpy matplotlib
 
 # install dmd
-wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
-apt-get update --allow-insecure-repositories
-apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
-apt-get update
-apt-get install -y dmd-compiler
+#wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
+#apt-get update --allow-insecure-repositories
+#apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
+#apt-get update
+#apt-get install -y dmd-compiler
 
 # install Melodia
 git clone --recursive https://github.com/rwmontalvao/Melodia.git
@@ -37,10 +37,13 @@ mv /opt/SSAxgeo /app/
 cd /app/SSAxgeo/
 pip3 install -e ./
 
+
 # compile diff
 cd /app/SSAxgeo/diffgeo/
-dub build --build=release --compiler=dmd
- 
+#dub build --build=release --compiler=dmd
+dub build --build=release --compiler=gdc --force
+
+
 ###
 
 %runscript
