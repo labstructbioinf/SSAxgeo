@@ -11,19 +11,19 @@ git clone --recurse-submodules https://github.com/labstructbioinf/SSAxgeo.git
 cd SSAxgeo
 ```
 
-2. Create conda environment:
+2. Create and activate conda environment:
 ```{bash}
-conda create -n ssaxgeo python=3.10 -y
+conda create -n ssaxgeo python=3.10 "pyarrow>=16,<21" ldc dub -c conda-forge -y
 conda activate ssaxgeo
-conda install -c conda-forge "pyarrow>=16,<21" ldc dub -y
 ```
 
-3. Install SSAxgeo
+3. Install SSAxgeo:
 ```{bash}
+# Be sure to use pip from the activated conda environment!
 pip install -e .
 ```
 
-4. Compile diffgeo
+4. Compile diffgeo:
 ```{bash}
 cd diffgeo
 dub build --build=release --compiler=ldc2
