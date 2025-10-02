@@ -1,6 +1,6 @@
 #!/bin/bash
 Bootstrap: docker
-From: ubuntu:22.04 #continuumio/conda-ci-linux-64-python3.8
+From: ubuntu:22.04
 
 %files
    ../SSAxgeo/ /opt/
@@ -10,7 +10,7 @@ apt-get update -qq -y
 
 apt install -y libcifpp-dev dssp dub curl
 
-apt install -y rsync wget python3 python3-pip git nano cmake
+apt install -y rsync wget python3 python3-pip git nano cmake gdc
 
 mkdir /app/
 cd /app/
@@ -18,30 +18,16 @@ cd /app/
 # install dependencies
 pip3 install jupyterlab
 pip3 install localpdb pandas nglview seaborn scipy scikit-learn hdbscan  numpy matplotlib
-
-# install dmd
-wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
-apt-get update --allow-insecure-repositories
-apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
-apt-get update
-apt-get install -y dmd-compiler
-
-# install Melodia
-git clone --recursive https://github.com/rwmontalvao/Melodia.git
-cd Melodia/
-python3 setup.py install
+pip3 install melodia_py
 
 #install SSAxgeo
-#git clone --recurse-submodules https://github.com/labstructbioinf/SSAxgeo.git
 mv /opt/SSAxgeo /app/
 cd /app/SSAxgeo/
 pip3 install -e ./
 
 # compile diff
 cd /app/SSAxgeo/diffgeo/
-dub build --build=release --compiler=dmd
- 
-###
+dub build --build=release --compiler=gdc --force
 
 %runscript
 exec /bin/bash "$@"
@@ -50,9 +36,9 @@ exec /bin/bash "$@"
 exec /bin/bash "$@"
 
 %test
-    mkdssp -h 
-    python3 -c "import melodia"
+    mkdssp -h
+    python3 -c "import melodia_py"
     ssaxgeo -h
-    mkdssp -h 
+    mkdssp -h
     dssp -h
     localpdb_setup -h
