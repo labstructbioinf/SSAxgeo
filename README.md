@@ -1,7 +1,6 @@
 # SSAxgeo
 
 This software provides protein Secondary Structure Assignment based on differential geometry and knot theory descriptors.
-
 ---
 
 ## How to install?
