@@ -8,108 +8,30 @@ This software provides protein Secondary Structure Assignment based on different
 1. Clone the repository:
 ```{bash}
 git clone --recurse-submodules https://github.com/labstructbioinf/SSAxgeo.git
+cd SSAxgeo
 ```
 
-2. build the container
-The recomended way to run SSAxgeo is using the the container provided on this repository. Once [Singularity](https://docs.sylabs.io/guides/3.11/user-guide/) is available on your system,
-
+2. Create conda environment:
 ```{bash}
-sudo singularity build ssaxgeo.sif SingularityFile
+conda create -n ssaxgeo python=3.10 -y
+conda activate ssaxgeo
+conda install -c conda-forge "pyarrow>=16,<21" ldc dub -y
 ```
 
-### How to run?
+3. Install SSAxgeo
+```{bash}
+pip install -e .
+```
 
-on the container
+4. Compile diffgeo
+```{bash}
+cd diffgeo
+dub build --build=release --compiler=ldc2
+```
+
+### Test the installation
 
 ```{bash}
 singularity exec ssaxgeo.sif ssaxgeo [pdb_filepath]
 ```
 
-----
-## REPRODUCE PAPER ANALYSES
-
-
-### 0 - Get a local copy of the PDB
-
-To reproduce the analyses presented on the paper, be sure localpdb is available on your environment.
-Then, setup your local pdb copy:
-
-```{bash}
-localpdb_setup -db_path /path/to/mypdb/ -plugins DSSP PDBClustering PDBChain --fetch_cif --fetch_pdb  
-```
-This process most likely will take a long time.
-
-### 1 - Get a sampling of a clustered PDB
-
-Once the local pdb copy is in place, compute a clustered pdb with a given sequence redundancy.
-For instance, with the command bellow the user can obtain entries clustered by 30% of redundance and entry with at least 2 angstron resolutions.
-
-TODO: if dssp and xgeo folder are not there, create it
-```{bash}
-ssaxgeo_getSampleOfClstrPDB /path/to/mypdb/ -out_dir /path/to/mydir/ -redundancy 30 -res_lim 2.0 -ncpus 4 -seed 0 
-```
-
-```
-usage: ssaxgeo_getSampleOfClstrPDB [-h] [-redundancy REDUNDANCY] [-out_dir OUT_DIR] [-res_lim RES_LIM] [-ncpus NCPUS] [-seed SEED] mylocalpdb
-
-This script loads data from localpdb, select a given clustered PDB, select randomly one exemplar of each cluster and save results as csv files.
-
-positional arguments:
-  mylocalpdb            Path to a local PDB copy (must be obtained by localpdb package)
-
-options:
-  -h, --help            show this help message and exit
-  -redundancy REDUNDANCY
-                        redundancy by sequence identity [100, 95, 90, 70, 50 and 30]
-  -out_dir OUT_DIR      Output directory (default=working dir)
-  -res_lim RES_LIM      resolution limit of structures to be considered (default=2.0)
-  -ncpus NCPUS          number of cpus to use (default = 1)
-  -seed SEED            seed for random number generator (default = None
-```
-### 2 - compute differential geometry descriptors
-
-For each entry on the clustered pdb, we need to compute our differential geometry descriptors:
-
-```{bash}
-ssaxgeo_computePDBxgeo --mylocalpdb_path /path/to/mypdb/ --sampled_clstrd_path /path/to/sampled_clust-30.csv --xgeo_output_dir /path/to/mypdb/xgeo_chains/ --ncpus 8 --out_csv /path/to/sampled_clust-30_updated.csv
-```
-
-```
-usage: ssaxgeo_computePDBxgeo [-h] --mylocalpdb_path MYLOCALPDB_PATH --sampled_clstrd_path SAMPLED_CLSTRD_PATH [--xgeo_output_dir XGEO_OUTPUT_DIR] [--ncpus NCPUS]
-                      [--out_csv OUT_CSV]
-
-Compute xgeo data for a given set of protein chains provided.
-
-options:
-  -h, --help            show this help message and exit
-  --mylocalpdb_path MYLOCALPDB_PATH
-                        path to a localpdb database
-  --sampled_clstrd_path SAMPLED_CLSTRD_PATH
-                        path to a sampled clustered csv (produced by getSampleOfCLstrPDB)
-  --xgeo_output_dir XGEO_OUTPUT_DIR
-                        path of a dir to store xgeo csv files (default = xgeo_output_dir+"/xgeo_chains/"
-  --ncpus NCPUS         Number of cpus to be used (default=1)
-  --out_csv OUT_CSV     Description of out_csv
-```
-### 4 - Clustering residues and generating "fragments" 
-----
-
-The next step is to normalize and smooth xgeo representation for each entry, clustering residues and obtain "fragments" (i. e., consecutive residues which belongs to the same cluster). Optionally, is possible to label all residues according to canonical regions (via `--do_res_labeling`)
-
-**WARN**: normalizing and smoothing may not be necessary anymore
-
-```
-ssaxgeo_clusterResidues /path/to/sampled_clust-30_updated.csv clust-30 -ncpus 8
-```
-
-To obtain residue labeling according to canonical regions a directory containing dataframes for canonical regions needs to be provided. Those dataframes needs to be named as: `alpha_can.p`, `pi_can.p`, `three_can.p` and `pp2_can.p`.
-
-```
-ssaxgeo_clusterResidues /path/to/sampled_clust-30_updated.csv clust-30 -ncpus 8 -do_
-```
-
-### 4 - Select canonical regions
-----
-Once a csv with the fragments is obtained, canonical regions can be idenfied by filtering fragments for geometrical helices, and clustering those fragment based on density. A jupyter notebook to generate the canonical sets is provided at `notebooks/SetCanonicalRegions.ipynb`
-
-----

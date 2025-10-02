@@ -18,5 +18,5 @@ setup(name='SSAxgeo',
       scripts=['scripts/ssaxgeo', 'scripts/ssaxgeo_getSampleOfClstrPDB', 
                'scripts/ssaxgeo_computePDBxgeo', "scripts/ssaxgeo_clusterResidues"],
       install_requires=['hdbscan', 'pandas', 'numpy', 
-                        'matplotlib', 'seaborn', 'scipy', 'localpdb'],
+                        'matplotlib', 'seaborn', 'scipy', 'melodia-py'],
       zip_safe=False)
