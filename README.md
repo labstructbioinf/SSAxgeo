@@ -34,7 +34,7 @@ cd ..
 
 ```{bash}
 cd test
-ssaxgeo -can_dir ../canonical 3tsi_chain_A.pdb
+ssaxgeo -can_dir ../canonical 3tsi_70_91_A.pdb -gen_plots
 # For more options see
 ssaxgeo -h
 ```
