@@ -33,6 +33,9 @@ cd ..
 ### Test the installation
 
 ```{bash}
-singularity exec ssaxgeo.sif ssaxgeo [pdb_filepath]
+cd test
+ssaxgeo -can_dir ../canonical 3tsi_chain_A.pdb
+# For more options see
+ssaxgeo -h
 ```
 
