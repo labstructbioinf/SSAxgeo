@@ -1,6 +1,7 @@
 # SSAxgeo
 
 This software performs protein Secondary Structure Assignment using differential geometry and knot theory descriptors.
+
 ---
 
 ## How to install?
@@ -39,3 +40,9 @@ ssaxgeo -can_dir ../canonical 3tsi_70_91_A.pdb -gen_plots
 ssaxgeo -h
 ```
 
+### Build a Singularity container
+
+```
+sudo singularity build ssaxgeo.sif SingularityFile
+singularity exec ssaxgeo.sif ssaxgeo -h
+```
