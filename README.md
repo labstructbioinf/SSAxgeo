@@ -1,6 +1,6 @@
 # SSAxgeo
 
-This software provides protein Secondary Structure Assignment based on differential geometry and knot theory descriptors.
+This software performs protein Secondary Structure Assignment using differential geometry and knot theory descriptors.
 ---
 
 ## How to install?
@@ -27,6 +27,7 @@ pip install -e .
 ```{bash}
 cd diffgeo
 dub build --build=release --compiler=ldc2
+cd ..
 ```
 
 ### Test the installation
