@@ -862,7 +862,9 @@ class entry:
 
         # compute displacement vectors
         if highlight_res == None:
-            dvecs_df = __compute_dvecs(self.xdata_df)
+        	# [1:-1] was added by sdh to avoid egde effects
+            dvecs_df = __compute_dvecs(self.xdata_df[1:-1])
+
         if highlight_res != None:
             err_m = 'highlight_res must be a list of two elements'
             assert(len(highlight_res) == 2), err_m
