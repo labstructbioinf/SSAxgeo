@@ -760,13 +760,22 @@ class entry:
         
         if engine == "diffgeo":
 
-            in_path = self.coord_flpath.split('.')[0]
+            in_basename = self.coord_flpath.split('.')[0]
+            in_path = self.coord_flpath#.split('.')[0]
             PDBfileToolBox.run_diffgeo(in_path)
-            xgeo_flpath = f"{in_path}.csv"
+            xgeo_flpath = f"{in_basename}.csv"
             assert(os.path.exists(xgeo_flpath))
             # fix columns
-            dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
-            self.xdata_df = pd.read_csv(xgeo_flpath, names=dgo_cols)
+            #dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
+            #dtypes_cols = {"conf":np.int32, "res_name":"category", "res":np.int32,
+            #               "atom":"category" ,"curv": np.float32, "tor": np.float32,
+            #               "arc": np.float32}
+            
+            rename_cols_dct = {'order':'res', 'name':'res_name', 'curvature':'curv',
+                               'torsion':'tor', 'writhing':'wri', 'arc_length':"arc"}
+            self.xdata_df = pd.read_csv(xgeo_flpath)#, names=dgo_cols)
+            self.xdata_df.rename(columns=rename_cols_dct, inplace=True)
+            
             self.xdata_df["wri"] = self.xdata_df["wri"].astype(float)
             self.xgeo_flpath = xgeo_flpath
             
