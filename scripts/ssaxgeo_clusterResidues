@@ -33,13 +33,15 @@ def norm_entries(entry):
     # These values were obtained from a smaller dataset
     c_max = 2.0464588
     c_min = 0.0
-    t_max = 0.1688680999999992
-    t_min = -0.3012673000000001
+    t_max = 0.17
+    t_min = -0.30
+    w_max = 0.30
+    w_min = -0.30
     # ----------------------------------------------------
     #print(entry.xdata_df.columns)
     # Normalized KT
     entry.get_normalize_xdf(c_norm=True, k_min=c_min, k_max=c_max, t_min=t_min,
-                            t_max=t_max)
+                            t_max=t_max, w_min=w_min, w_max=w_max)
     assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
     return entry
 
@@ -47,7 +49,7 @@ def smooth_entries(entry):
     # Smooth KTW
     entry.add_smoothed('curv_norm')
     entry.add_smoothed('tor_norm')
-    entry.add_smoothed('wri')
+    entry.add_smoothed('wri_norm')
     assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
 
     return entry
@@ -65,7 +67,7 @@ def get_labels(entry):
 
 def detect_helices(entry):
     entry.detect_hlx(show_plot=False, 
-                     selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'],
+                     selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_norm_smooth'],
                      label=False)
     assert(entry.xdata_df is not None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
     return entry
@@ -88,7 +90,7 @@ def get_labels(entry):
                             pp2_df=pp2_df,
                             lalpha_df = lalpha_df, lthree_df=lthree_df)
     entry.get_labels(dist_min=0.2, pp2_max=0.07)
-    entry.detect_hlx(show_plot=False, selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'])
+    entry.detect_hlx(show_plot=False, selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_norm_smooth'])
     #assert(entry.xdata_df != None), f"ERROR: for entry {entry.pdbid}_{entry.chain}."
 
     return entry
@@ -158,7 +160,7 @@ grp.entries = df_filtered.apply(load_entries, axis=1)
 print('>> ', len(grp.entries), 'total loaded entries')
 
 # 1 - Normalization
-print('@ normalize data...')
+print('@ normalize data (ktw)...')
 workers = mp.Pool(processes=NCPUS)
 output = workers.map(norm_entries,grp.entries.values)
 workers.close()
