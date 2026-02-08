@@ -11,6 +11,7 @@ apt-get update -qq -y
 apt install -y libcifpp-dev dssp dub curl
 
 apt install -y rsync wget python3 python3-pip git nano cmake gdc
+apt install -y rsync wget python3 python3-pip git nano cmake gdc
 
 mkdir /app/
 cd /app/
@@ -24,6 +25,7 @@ pip3 install melodia_py
 mv /opt/SSAxgeo /app/
 cd /app/SSAxgeo/
 pip3 install -e ./
+
 
 # compile diff
 cd /app/SSAxgeo/diffgeo/

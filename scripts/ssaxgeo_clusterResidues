@@ -8,15 +8,8 @@ __status__ = "Alpha"
 
 import ssaxgeo.PDBx as PDBx
 import pandas as pd
-import numpy as np
-import random
 import pickle as pck
-import seaborn as sns
-import matplotlib.pyplot as plt
 ##
-import ssaxgeo.MathToolBox as MathToolBox
-from scipy.cluster.hierarchy import fcluster
-import hdbscan
 ##
 import multiprocessing as mp
 ##
@@ -75,6 +68,7 @@ def detect_helices(entry):
 
 # ~~! PANDAS APPLY !~~
 def load_entries(row):
+    print(row)
     entry = PDBx.entry(coord_flpath=row['chain_flpath'],
             xgeo_flpath=row['xgeo_chain_flpath'],
             pdbid=row['pdb'], chain=row['chain'])
@@ -151,8 +145,8 @@ print(f"  > {len(df)} total entries found")
 
 # drop rows with nan values on any col
 print("   - drop rows with NAN values")
-df_filtered = df.dropna()
-print(f"   > {len(df_filtered.dropna())} remains")
+df_filtered = df#.dropna()
+print(f"   > {len(df_filtered)} remains")
 # loading pdbx entries
 grp = PDBx.group('test')
 print("@ loading individual entries data...")
@@ -162,13 +156,13 @@ print('>> ', len(grp.entries), 'total loaded entries')
 # 1 - Normalization
 print('@ normalize data (ktw)...')
 workers = mp.Pool(processes=NCPUS)
-output = workers.map(norm_entries,grp.entries.values)
+output_norm = workers.map(norm_entries,grp.entries.values)
 workers.close()
 
 # 2 - smoothing
 print('@ smoothing data...')
 workers = mp.Pool(processes=NCPUS)
-output = workers.map(smooth_entries,output)
+output_smooth = workers.map(smooth_entries,output_norm)
 workers.close()
 
 # 3 - standardize C alpha coordinates
@@ -179,7 +173,7 @@ workers.close()
 
 print('@ cluster residues...')
 workers = mp.Pool(processes=NCPUS)
-output = workers.map(detect_helices,output)
+output_cluster = workers.map(detect_helices,output_smooth)
 workers.close()
 
 
@@ -197,7 +191,7 @@ if do_res_labeling == True:
     print("    > computing labels...")
 
     workers = mp.Pool(processes=NCPUS)
-    output = workers.map(get_labels,output)
+    output = workers.map(get_labels,output_cluster)
     workers.close()
 
 # store at group object

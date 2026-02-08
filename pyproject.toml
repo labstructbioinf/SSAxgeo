@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SSAxgeo"
+version = "1.0.dev"
+description = "Protein secondary structure elements assignment based on differential geometry"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  { name = "Antonio Marinho", email = "amarinhosn@pm.me" }
+]
+urls = { Homepage = "https://github.com/labstructbioinf/SSAxgeo" }
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3.8",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bio-Informatics"
+]
+
+# These are what used to be install_requires
+dependencies = [
+  "hdbscan",
+  "pandas",
+  "numpy",
+  "matplotlib",
+  "seaborn",
+  "scipy",
+  "localpdb"
+]
+
+[tool.setuptools]
+# Same as packages=['ssaxgeo']
+packages = ["ssaxgeo"]
+zip-safe = false
+
+# Keep your existing script files (equivalent to setup(..., scripts=[...]))
+# If you ever switch to entry points, use [project.scripts] instead.
+script-files = [
+  "scripts/ssaxgeo",
+  "scripts/ssaxgeo_getSampleOfClstrPDB",
+  "scripts/ssaxgeo_computePDBxgeo",
+  "scripts/ssaxgeo_clusterResidues"
+]
