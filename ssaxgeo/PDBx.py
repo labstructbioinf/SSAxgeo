@@ -1180,7 +1180,7 @@ class entry:
         #    print(self.xgeo_flpath)
         self.xdata_df = xdata_df
 
-    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df, lalpha_df=None, lthree_df=None):
+    def get_dist2canonical(self, pi_df, alpha_df, three_df, pp2_df, beta_df, lalpha_df=None, lthree_df=None):
         ''' '''
         # for pandas apply
         def get_alphad(row):
@@ -1211,6 +1211,13 @@ class entry:
             d_pPP2_min = MathToolBox.get_d2_pC_min(p, C)
             return d_pPP2_min
 
+        def get_betad(row):
+            '''Compute distance for beta set'''
+            p = row[['curv', 'tor', 'wri']].values
+            C = beta_df[['c_mean', 't_mean', 'w_mean']].values
+            d_pBeta_min = MathToolBox.get_d2_pC_min(p, C)
+            return d_pBeta_min
+
         def get_lalphad(row):
             '''Compute distance for lalpha set'''
             p = row[['curv', 'tor', 'wri']].values
@@ -1230,7 +1237,8 @@ class entry:
         self.xdata_df['D(Pi)'] = self.xdata_df.apply(get_pid, axis=1)
         self.xdata_df['D(3(10))'] = self.xdata_df.apply(get_310d, axis=1)
         self.xdata_df['D(PP2)'] = self.xdata_df.apply(get_pp2d, axis=1)
-
+        self.xdata_df['D(Beta)'] = self.xdata_df.apply(get_betad, axis=1)
+        
         # add left alpha and 3(10) distances if provided
         if lalpha_df is not None:
             self.xdata_df['D(lalpha)'] = self.xdata_df.apply(get_lalphad, axis=1)
@@ -1253,14 +1261,14 @@ class entry:
         pp2_max = <float>, max distance away from PP2 to still be assigned as such
         '''
         # get distances
-        dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)']].values
-        labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2']
-        
+        dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 'D(PP2)', 'D(Beta)']].values
+        labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2', 'Beta']
+
         if left_hand == True:
             # get left hand distances
-            dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))', 
-                                      'D(PP2)','D(lalpha)', 'D(l3(10))']].values
-            labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2', 'lAlpha', 'l3(10)']
+            dist_arr = self.xdata_df[['D(Alpha)', 'D(Pi)', 'D(3(10))',
+                                      'D(PP2)','D(Beta)', 'D(lalpha)', 'D(l3(10))']].values
+            labels_arr = ['Alpha', 'Pi', '3(10)', 'PP2', 'Beta','lAlpha', 'l3(10)']
 
         # check distances bellow threshold
         row_is, col_is = np.where(dist_arr < dist_min)

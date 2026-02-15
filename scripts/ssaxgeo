@@ -188,6 +188,7 @@ alpha_can = pd.read_csv(can_dir+'/alpha_can.csv')
 pi_can = pd.read_csv(can_dir+'/pi_can.csv')
 three_can = pd.read_csv(can_dir+'/three_can.csv')
 pp2_can = pd.read_csv(can_dir+'/pp2_can.csv')
+beta_can = pd.read_csv(can_dir+'/beta_can.csv')
 lalpha_can = pd.read_csv(can_dir+'/lalpha_can.csv')
 lthree_can = pd.read_csv(can_dir+'/lthree_can.csv')
 
@@ -236,7 +237,7 @@ if file_as_input == True:
     #except(KeyError):
     #  print(dssp_flpath)
 
-  
+
   # plot arrows representation
   if args.gen_plots == True:
     print('@ ploting arrows...')
@@ -249,8 +250,8 @@ if file_as_input == True:
   print('@ running SSAx...')
   print('  >> computing residues to canonical distances...')
   # get distances to canonical
-  entry.get_dist2canonical(alpha_df=alpha_can, pi_df=pi_can, three_df=three_can,
-                           pp2_df=pp2_can, lalpha_df=lalpha_can,lthree_df=lthree_can)
+  entry.get_dist2canonical(alpha_df=alpha_can, pi_df=pi_can, three_df=three_can, pp2_df=pp2_can,
+                          beta_df=beta_can, lalpha_df=lalpha_can,lthree_df=lthree_can)
   print('  >> seting residues labels...')
 
   # get labels
@@ -261,7 +262,7 @@ if file_as_input == True:
   # sort file naming
   xdata_flnm = prefix+'_'+xdata_sfx
   ssax_flnm = prefix+'_'+ssax_sfx
-  
+
   # write xdata dataframe csv
   entry.xdata_df.to_csv(out_dir+xdata_flnm)
   print('  >> ', out_dir+xdata_flnm)
