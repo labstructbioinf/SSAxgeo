@@ -185,10 +185,9 @@ def run_dssp(pdb_flpth, dssp_flpth):
     os.system(cmd)
 
 def run_diffgeo(in_path, diffgeo_path=SCRIPT_DIR+'/../diffgeo/diffgeo',ncpus=1):
-    cmd = f"{diffgeo_path} --id {in_path} --cores {ncpus}"
-    #print(cmd)
+    cmd = f"{diffgeo_path} --pdbPath {in_path} --threads {ncpus}"
     os.system(cmd)
-            
+
 #input_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E.pdb"
 #output_pdb = "/home/antonio/Projects/HlxCnt/mypdb/pdb_chain/gp/6gpz_E_sntzd.pdb"
 

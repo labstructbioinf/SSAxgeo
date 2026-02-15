@@ -374,7 +374,7 @@ def mount_frags_df(xdata_df, pdbid, chain,len_lim=3, label=True):
             w_raw = wri_col.values
 
             # wri smoothed
-            ws_col = hlx_df['wri_smooth']
+            ws_col = hlx_df['wri_norm_smooth']
             ws_mean, ws_median, ws_std = get_mean_std_median_of(ws_col)
             ws_raw = ws_col.values
             # tor
@@ -510,7 +510,7 @@ def smooth_entries(entry):
 
 def detect_hlx(entry):
     entry.detect_hlx(show_plot=False, w_lim=0.08, r_dist=0.323, nr_dist=0.15,
-        selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_smooth'])
+        selected_cols=['curv_norm_smooth', 'tor_norm_smooth', 'wri_norm_smooth'])
     return entry
 
 # ~~~~ Functions for Calfa coordinate operations ~~~~ #
@@ -760,13 +760,22 @@ class entry:
         
         if engine == "diffgeo":
 
-            in_path = self.coord_flpath.split('.')[0]
+            in_basename = self.coord_flpath.split('.')[0]
+            in_path = self.coord_flpath#.split('.')[0]
             PDBfileToolBox.run_diffgeo(in_path)
-            xgeo_flpath = f"{in_path}.csv"
+            xgeo_flpath = f"{in_basename}.csv"
             assert(os.path.exists(xgeo_flpath))
             # fix columns
-            dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
-            self.xdata_df = pd.read_csv(xgeo_flpath, names=dgo_cols)
+            #dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
+            #dtypes_cols = {"conf":np.int32, "res_name":"category", "res":np.int32,
+            #               "atom":"category" ,"curv": np.float32, "tor": np.float32,
+            #               "arc": np.float32}
+            
+            rename_cols_dct = {'order':'res', 'name':'res_name', 'curvature':'curv',
+                               'torsion':'tor', 'writhing':'wri', 'arc_length':"arc"}
+            self.xdata_df = pd.read_csv(xgeo_flpath)#, names=dgo_cols)
+            self.xdata_df.rename(columns=rename_cols_dct, inplace=True)
+            
             self.xdata_df["wri"] = self.xdata_df["wri"].astype(float)
             self.xgeo_flpath = xgeo_flpath
             
@@ -862,7 +871,9 @@ class entry:
 
         # compute displacement vectors
         if highlight_res == None:
-            dvecs_df = __compute_dvecs(self.xdata_df)
+        	# [1:-1] was added by sdh to avoid egde effects
+            dvecs_df = __compute_dvecs(self.xdata_df[1:-1])
+
         if highlight_res != None:
             err_m = 'highlight_res must be a list of two elements'
             assert(len(highlight_res) == 2), err_m
@@ -1024,16 +1035,22 @@ class entry:
                 defines torsion minimum values
         t_max : float
                 defines curvature minimum values
+        w_min : float
+                defines writhing minimum values
+        w_max : float
+                defines writhing maximum values
         '''
         # 0 - Check if there is no normalized data
         #     *avoids the inclusion of a new column on xdata
         assert('curv_norm' not in self.xdata_df.columns)
         assert('tor_norm' not in self.xdata_df.columns)
-
+        assert('wri_norm' not in self.xdata_df.columns)
+        
         # 1 - get columns data
         X_curv = self.xdata_df['curv'].loc[self.xdata_df['curv'] != 0.0]
         X_tor = self.xdata_df['tor'].loc[self.xdata_df['tor'] != 0.0]
-
+        X_wri = self.xdata_df['wri'].loc[self.xdata_df['wri'] != 0.0]
+        
         # 2 - get min and max values for normalization
         if c_norm is False:
             k_min = X_curv.min()
@@ -1042,19 +1059,25 @@ class entry:
             t_min = X_tor.min()
             t_max = X_tor.max()
 
+            w_min = X_wri.min()
+            w_max = X_wri.max()
+
         if c_norm is True:
             # process kwargs
             try:
-             k_min = kwargs['k_min']
-             k_max = kwargs['k_max']
+                k_min = kwargs['k_min']
+                k_max = kwargs['k_max']
 
-             t_min = kwargs['t_min']
-             t_max = kwargs['t_max']
+                t_min = kwargs['t_min']
+                t_max = kwargs['t_max']
+
+                w_min = kwargs['w_min']
+                w_max = kwargs['w_max']
 
             except(KeyError):
              print("!!ERROR: You must provide the minimum and maximum values")
              print("         to use the custom normalization. The keys to")
-             print("         use are 't_min', 't_max', 'k_min', 'k_max'.")
+             print("         use are 't_min', 't_max', 'k_min', 'k_max', 'w_min', 'w_max'.")
              print("  kwargs provided: {}".format(kwargs))
              exit(1)
 
@@ -1062,10 +1085,11 @@ class entry:
         # 3 - Do the normalization
         X_curv_norm = custom_norm(X_curv, min=k_min, max=k_max)
         X_tor_norm = custom_norm(X_tor, min=t_min, max=t_max, a=0, b=1.0)
-
+        X_wri_norm = custom_norm(X_wri, min=w_min, max=w_max, a=0, b=1.0)
+        
         # 4 - stick the normalized columns to xdata
-        df = pd.concat([X_curv_norm, X_tor_norm], axis=1)
-        df.columns = ['curv_norm', 'tor_norm']
+        df = pd.concat([X_curv_norm, X_tor_norm, X_wri_norm], axis=1)
+        df.columns = ['curv_norm', 'tor_norm', 'wri_norm']
         self.xdata_df = pd.concat([self.xdata_df, df], axis=1)
 
     def standardize_coords(self):
