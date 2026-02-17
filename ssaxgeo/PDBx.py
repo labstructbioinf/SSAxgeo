@@ -50,10 +50,11 @@ def load_xgeo_df(xgeo_flpath):
         "conf": np.int16,
         "aa_idx": np.int32
     }
-
+    #print('debug',xgeo_flpath )
     xgeo_df = pd.read_csv(xgeo_flpath, index_col=False, dtype=dtypes)#, header=None)
-    xgeo_df.drop(["Unnamed: 0"], inplace=True, axis=1)
-    xgeo_df.drop(["res_name"], inplace=True, axis=1)
+    #print(xgeo_df)
+    #xgeo_df.drop(["Unnamed: 0"], inplace=True, axis=1)
+    #xgeo_df.drop(["res_name"], inplace=True, axis=1)
 
     if "phi" in xgeo_df.columns:
         xgeo_df.drop(["phi", "psi"], axis=1, inplace=True)
@@ -702,6 +703,7 @@ class entry:
         # 2 - load xgeo dataframe
         if self.xgeo_flpath != None:
             self.xdata_df = load_xgeo_df(xgeo_flpath)
+            #print('debug', xgeo_flpath)
         if self.xgeo_flpath == None:
             self.computeDiffGeo(model_i=model_i)
         # 3 - get is count
@@ -764,7 +766,8 @@ class entry:
             in_path = self.coord_flpath#.split('.')[0]
             PDBfileToolBox.run_diffgeo(in_path)
             xgeo_flpath = f"{in_basename}.csv"
-            assert(os.path.exists(xgeo_flpath))
+            os.system(f'mv {os.path.basename(xgeo_flpath)} {xgeo_flpath}')
+            assert(os.path.exists(xgeo_flpath)), xgeo_flpath
             # fix columns
             #dgo_cols = ["conf","res_name","atom", "res", "curv", "tor", "wri","arc"]
             #dtypes_cols = {"conf":np.int32, "res_name":"category", "res":np.int32,

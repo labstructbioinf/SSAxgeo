@@ -46,22 +46,26 @@ def compute_xgeo(kwargs):
     pdb_chain_flpth = kwargs["pdb_chain_flpth"]
     output_dir = kwargs["xgeo_output_dir"]
     try:
-        # assemble pdb chain filepath
+    #if True:
+        # dir to store csv file
         prefix = pdb_chain_flpth.split("/")[-1].split(".")[0]
         chain_output_dir = f"{output_dir}/{prefix[1:3]}"
+        os.makedirs(chain_output_dir, exist_ok=True)
 
-        # if xgeo csv exists, skip it
+        # full path to csv file
         chain_xgeo_flpath = chain_output_dir+"/"+prefix+".csv"
-        if os.path.exists(chain_xgeo_flpath):
-            pass
-        # if not, compute xgeo and write data
-        else:
-            os.makedirs(chain_output_dir, exist_ok=True)
+
+        if not os.path.exists(chain_xgeo_flpath):
+            #print('debug, in pdb', pdb_chain_flpth)
+            #print('debug, out csv', chain_xgeo_flpath)
             entry = PDBx.entry(pdb_chain_flpth)
             entry.xdata_df.to_csv(chain_xgeo_flpath)
+        else:
+            pass
+            #print('debug,exists:', chain_xgeo_flpath)
     # TODO investigate those erorrs
-    except:
-        print(f"Error: {pdb_chain_flpth}")
+    except Exception as e:
+        print(f"Error: {pdb_chain_flpth}: {e}")
 
 def compute_dssp_data(kwargs):
     pdb_chain_flpth = kwargs["pdb_chain_flpth"]
@@ -76,7 +80,9 @@ def compute_dssp_data(kwargs):
         pass
     else:
         os.makedirs(chain_output_dir, exist_ok=True)
-        cmd = f"mkdssp --output-forma dssp {pdb_chain_flpth} > {chain_dssp_flpath}"
+        cmd = f"~/apps/dssp_4/build/mkdssp --output-format dssp {pdb_chain_flpth} > {chain_dssp_flpath}"
+        print(cmd)
+        #cmd = f"mkdssp --output-forma dssp {pdb_chain_flpth} > {chain_dssp_flpath}"
         os.system(cmd)
 
 # --- | handle paths 
@@ -281,6 +287,10 @@ print(f"@ writing {out_csv} ...")
 # add xgeo files paths at a new column
 xgeo_files_found = get_all_files_in_dir(xgeo_output_dir)
 dssp_files_found = get_all_files_in_dir(dssp_output_dir)
+
+#print('debug', xgeo_files_found)
+#print('debug', dssp_files_found)
+
 xgeo_paths_idx_dct = {}
 dssp_paths_idx_dct = {}
 
