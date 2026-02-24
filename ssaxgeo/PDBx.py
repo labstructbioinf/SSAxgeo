@@ -50,8 +50,11 @@ def load_xgeo_df(xgeo_flpath):
         "conf": np.int16,
         "aa_idx": np.int32
     }
-    #print('debug',xgeo_flpath )
-    xgeo_df = pd.read_csv(xgeo_flpath, index_col=False, dtype=dtypes)#, header=None)
+    try:
+        xgeo_df = pd.read_csv(xgeo_flpath, index_col=False, dtype=dtypes)#, header=None)
+    except:
+        print('debug', xgeo_flpath)
+        sys.exit(-1)
     #print(xgeo_df)
     #xgeo_df.drop(["Unnamed: 0"], inplace=True, axis=1)
     #xgeo_df.drop(["res_name"], inplace=True, axis=1)

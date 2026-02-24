@@ -9,12 +9,6 @@ __status__ = "Alpha"
 import ssaxgeo.PDBx as PDBx
 import pandas as pd
 import pandas as pd
-
-pd.set_option("display.max_colwidth", None)   # nie ucina długich stringów
-pd.set_option("display.max_columns", None)    # pokazuje wszystkie kolumny
-pd.set_option("display.width", None)          # nie łamie wiersza
-pd.set_option("display.max_rows", None)       # (opcjonalnie)
-
 import pickle as pck
 ##
 ##
@@ -75,7 +69,7 @@ def detect_helices(entry):
 
 # ~~! PANDAS APPLY !~~
 def load_entries(row):
-    print(row.to_string())
+    #print(row.to_string())
     entry = PDBx.entry(coord_flpath=row['chain_flpath'],
             xgeo_flpath=row['xgeo_chain_flpath'],
             pdbid=row['pdb'], chain=row['chain'])
@@ -153,7 +147,7 @@ print(f"  > {len(df)} total entries found")
 
 # drop rows with nan values on any col
 print("   - drop rows with NAN values")
-df_filtered = df#.dropna()
+df_filtered = df.dropna()
 print(f"   > {len(df_filtered)} remains")
 # loading pdbx entries
 grp = PDBx.group('test')
